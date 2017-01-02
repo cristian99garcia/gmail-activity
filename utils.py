@@ -25,6 +25,7 @@ import binascii
 from gettext import gettext as _
 
 TABS = ["", "", "", "", ""]
+MAIL_SPLITTERS = ["<div class=\"gmail_extra\">", "---------- Forwarded message ----------"]
 
 
 def get_label_name(label_id):
@@ -147,8 +148,6 @@ def load_html_data(message):
     extra_html = None
     parts = get_message_parts(message)
 
-    splitter = "<div class=\"gmail_extra\">"
-
     if parts == []:
         print "NO TIENE PARTS", message
         return
@@ -156,10 +155,15 @@ def load_html_data(message):
     for part in parts:
         if part["mimeType"] == "text/html":
             html = base64.urlsafe_b64decode(str(part["body"]["data"]))
-            if splitter in html:
-                message_html = html.split(splitter)[0]
-                extra_html = splitter + html.split(splitter, 1)[1]
-            else:
+            splitted = False
+            for splitter in MAIL_SPLITTERS:
+                if splitter in html:
+                    message_html = html.split(splitter)[0]
+                    extra_html = splitter + html.split(splitter, 1)[1]
+                    splitted = True
+                    break
+
+            if not splitted:
                 message_html = html
 
         elif part["mimeType"] == "text/plain":
