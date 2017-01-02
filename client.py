@@ -81,6 +81,7 @@ class Client(GObject.GObject):
         self.emit("loaded")
 
     def __load_thread(self, threadid):
+        threadid = "1590d5ae0ed04415"
         if self.service is None:
             return
 

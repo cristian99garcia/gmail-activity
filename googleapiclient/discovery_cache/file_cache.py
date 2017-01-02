@@ -31,12 +31,10 @@ import threading
 
 try:
   from oauth2client.contrib.locked_file import LockedFile
-  print 1
 except ImportError:
   # oauth2client < 2.0.0
   try:
     from oauth2client.locked_file import LockedFile
-    print 2
   except ImportError:
     # oauth2client > 4.0.0
     raise ImportError(

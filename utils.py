@@ -20,6 +20,7 @@
 
 import re
 import base64
+import binascii
 
 from gettext import gettext as _
 
@@ -77,6 +78,16 @@ def get_date_string(data):
         return "%s/%s/%s" % (day, month, year)
     else:
         return "%s/%s/%s" % (month, day, year)
+
+
+def decode64_string(text):
+    try:
+        return base64.decodestring(text)
+    except binascii.Error:
+        try:
+            return text.decode("base64")
+        except:
+            return text
 
 
 def get_urls(text):
@@ -152,7 +163,8 @@ def load_html_data(message):
                 message_html = html
 
         elif part["mimeType"] == "text/plain":
-            message_html = make_html_from_text(base64.decodestring(str(part["body"]["data"])))
+            string = decode64_string(str(part["body"]["data"]))
+            message_html = make_html_from_text(string)
 
         elif part["mimeType"] == "image/jpeg":
             """
