@@ -24,7 +24,6 @@ import gi
 gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
-from gi.repository import GObject
 
 from sugar3.activity import activity
 from sugar3.graphics.toolbutton import ToolButton
@@ -32,20 +31,7 @@ from sugar3.graphics.toolbarbox import ToolbarBox
 from sugar3.activity.widgets import StopButton
 from sugar3.activity.widgets import ActivityToolbarButton
 
-from client import Client
-from mail_viewer import MailViewer
-from loading_view import LoadingView
-from mails_listbox import MailsListBox
-
-import gi
-gi.require_version("Gtk", "3.0")
-
-
-class ViewType:
-    LOADING = 0
-    MAILS_LIST = 1
-    MAIL = 2
-
+from canvas import GmailCanvas
 
 
 class Gmail(activity.Activity):
@@ -53,81 +39,10 @@ class Gmail(activity.Activity):
     def __init__(self, handle):
         activity.Activity.__init__(self, handle)
 
-        self.view_type = None
-
         self.make_toolbar()
 
-        self.client = Client()
-        self.client.connect("profile-loaded", self.__profile_loaded_cb)
-        self.client.connect("loading", self.__start_load)
-        self.client.connect("loaded", self.__end_load)
-        self.client.connect("thread-loaded", self.__thread_loaded_cb)
-
-        self.view_box = Gtk.VBox()
-        self.set_canvas(self.view_box)
-
-        self.loading_view = LoadingView()
-
-        self.mails_listbox = MailsListBox()
-        #self.mails_listbox.connect("label-selected", self.__label_selected_cb)
-        #self.mails_listbox.connect("thread-selected", self.__thread_selected_cb)
-
-        self.mail_viewer = MailViewer()
-
-        self.client.start()
-
-        self.show_all()
-
-    def __profile_loaded_cb(self, client):
-        self.loading_view.set_profile(self.client.get_profile())
-
-    def __start_load(self, client):
-        self.set_view(ViewType.LOADING)
-
-    def __end_load(self, client):
-        def load_data():
-            self.mails_listbox.set_threads(self.client.get_threads())
-            self.mails_listbox.set_labels(self.client.get_labels())
-
-        self.loading_view.stop()
-        self.set_view(ViewType.MAILS_LIST)
-        GObject.idle_add(load_data)
-
-    def __thread_loaded_cb(self, client, threadid):
-        thread = self.client.get_thread(threadid)
-        self.mail_viewer.set_thread(thread)
-        self.set_view(ViewType.MAIL)
-
-    def __label_selected_cb(self, view, labelid):
-        print "LABEL SELECTED", labelid
-
-    def __thread_selected_cb(self, view, threadid):
-        self.client.request_thread(threadid)
-
-    def set_view(self, view_type):
-        if view_type == self.view_type:
-            return
-
-        self.view_type = view_type
-
-        if self.view_box.get_children() != []:
-            self.view_box.remove(self.view_box.get_children()[0])
-
-        child = None
-        if self.view_type == ViewType.LOADING:
-            self.loading_view.start()
-            child = self.loading_view
-
-        elif self.view_type == ViewType.MAILS_LIST:
-            child = self.mails_listbox
-            self.loading_view.stop()
-
-        elif self.view_type == ViewType.MAIL:
-            child = self.mail_viewer
-            self.loading_view.stop()
-
-        if child is not None:
-            self.view_box.pack_start(child, True, True, 0)
+        self.canvas = GmailCanvas()
+        self.set_canvas(self.canvas)
 
         self.show_all()
 
