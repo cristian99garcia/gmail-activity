@@ -52,7 +52,8 @@ class LoadingView(CenterBox):
         return True
 
     def start(self):
-        self._tid = GObject.timeout_add(200, self.__advance)
+        if self._tid is None:
+            self._tid = GObject.timeout_add(200, self.__advance)
 
     def stop(self):
         if self._tid is not None:

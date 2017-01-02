@@ -96,7 +96,6 @@ class Window(Gtk.Window):
         print "LABEL SELECTED", labelid
 
     def __thread_selected_cb(self, view, threadid):
-        self.set_view(ViewType.LOADING)
         self.client.request_thread(threadid)
 
     def set_view(self, view_type):
@@ -115,9 +114,11 @@ class Window(Gtk.Window):
 
         elif self.view_type == ViewType.MAILS_LIST:
             child = self.mails_listbox
+            self.loading_view.stop()
 
         elif self.view_type == ViewType.MAIL:
             child = self.mail_viewer
+            self.loading_view.stop()
 
         if child is not None:
             self.view_box.pack_start(child, True, True, 0)

@@ -29,6 +29,7 @@ from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
 
+#from gi.repository import Gdk
 from gi.repository import GObject
 
 try:
@@ -90,16 +91,20 @@ class Client(GObject.GObject):
         self.emit("thread-loaded", threadid)
 
     def start(self):
-        self.load()
-
-    def load(self):
-        self.emit("loading")
-
         if self.credentials is None:
             self.credentials = self.get_credentials()
 
-        thread = threading.Thread(target=self.__load)
-        thread.start()
+        self.load()
+
+    def load(self):
+        if self.credentials is None:
+            return
+
+        self.emit("loading")
+
+        #thread = threading.Thread(target=self.__load)
+        #thread.start()
+        self.__load()
 
     def get_profile(self):
         return self.profile
@@ -130,5 +135,7 @@ class Client(GObject.GObject):
         return credentials
 
     def request_thread(self, threadid):
-        thread = threading.Thread(target=self.__load_thread, args=(threadid,))
-        thread.run()
+        self.emit("loading")
+        #thread = threading.Thread(target=self.__load_thread, args=(threadid,))
+        #thread.start()
+        self.__load_thread(threadid)

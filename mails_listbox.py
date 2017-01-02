@@ -119,8 +119,14 @@ class ThreadsListBox(TreeView):
         self.model[path][0] = not self.model[path][0]
 
     def set_threads(self, threads):
+        def add(snippet, id, historyid):
+            try:
+                self.model.append([False, snippet, id, historyid])
+            except:
+                print "error", id
+
         for thread in threads:
-            self.model.append([False, thread["snippet"], thread["id"], thread["historyId"]])
+            GObject.idle_add(add, thread["snippet"], thread["id"], thread["historyId"])
 
         self.show_all()
 
