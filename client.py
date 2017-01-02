@@ -35,7 +35,7 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk
 from gi.repository import GObject
 
-GObject.threads_init()
+# GObject.threads_init()
 
 
 SCOPES = "https://mail.google.com/"
@@ -100,14 +100,14 @@ class Client(GObject.GObject):
 
         self.emit("loading")
 
-        #Gdk.threads_enter()
+        # Gdk.threads_enter()
         thread = threading.Thread(target=self.__load)
         thread.deamon = True
         thread.start()
-        #Gdk.threads_leave()
-        #self.__load()
+        # Gdk.threads_leave()
+        # self.__load()
 
-        #GObject.idle_add(self.__load)
+        # GObject.idle_add(self.__load)
 
     def get_profile(self):
         return self.profile
@@ -135,7 +135,7 @@ class Client(GObject.GObject):
 
     def request_thread(self, threadid):
         self.emit("loading")
-        #thread = threading.Thread(target=self.__load_thread, args=(threadid,))
-        #thread.deamon = True
-        #thread.start()
+        # thread = threading.Thread(target=self.__load_thread, args=(threadid,))
+        # thread.deamon = True
+        # thread.start()
         self.__load_thread(threadid)
