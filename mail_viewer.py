@@ -19,13 +19,17 @@
 # Boston, MA 02111-1307, USA.
 
 from gettext import gettext as _
+
+from utils import load_html_data
 from utils import get_date_string
 
 import gi
 gi.require_version("Gtk", "3.0")
+gi.require_version("WebKit", "3.0")
 
 from gi.repository import Gtk
 from gi.repository import Pango
+from gi.repository import WebKit
 from gi.repository import GObject
 
 
@@ -60,6 +64,9 @@ class MailBox(Gtk.VBox):
         Gtk.VBox.__init__(self)
 
         self.mail = mail
+        self.views = { }
+        self.message_html = None
+        self.extra_html = None
 
         self.set_size_request(1, 100)
         self.set_margin_top(5)
@@ -69,9 +76,10 @@ class MailBox(Gtk.VBox):
 
         self.pack_end(Gtk.VSeparator(), False, False, 20)
 
+        self.message_html, self.extra_html = load_html_data(self.mail)
         self.make_headerbox()
         self.make_mailbox()
-        self.make_resentbox()
+        self.make_extrabox()
 
     def make_headerbox(self):
         self.headerbox = Gtk.HBox()
@@ -108,36 +116,29 @@ class MailBox(Gtk.VBox):
         self.mailbox = Gtk.VBox()
         self.pack_start(self.mailbox, False, False, 0)
 
-        view = Gtk.TextView()
-        view.set_cursor_visible(False)
-        view.set_editable(False)
-        view.set_size_request(300, 200)
-        view.set_wrap_mode(Gtk.WrapMode.WORD)
-        view.set_left_margin(5)
-        view.set_right_margin(5)
+        view = WebKit.WebView()
+        self.mailbox.pack_start(view, False, False, 0)
 
-        if hasattr(view, "set_top_margin"):
-            view.set_top_margin(5)
-        if hasattr(view, "set_bottom_margin"):
-            view.set_bottom_margin(5)
-
-        self.mailbox.pack_start(view, True, True, 0)
-
-        buffer = view.get_buffer()
-        buffer.set_text(self.mail["snippet"])
+        if self.message_html is not None:
+            view.load_html_string(self.message_html, "file:///")
 
         self.mailbox.show_all()
 
-    def make_resentbox(self):
-        resent_expander = Gtk.Expander()
-        resent_expander.set_label("...")
-        self.pack_end(resent_expander, False, False, 0)
+    def make_extrabox(self):
+        self.extrabox = Gtk.VBox()
+        self.pack_end(self.extrabox, False, False, 0)
 
-        self.resentbox = Gtk.VBox()
-        resent_expander.add(self.resentbox)
+        if self.extra_html is not None:
+            extra_expander = Gtk.Expander()
+            extra_expander.set_label("...")
+            self.extrabox.pack_start(extra_expander, False, False, 0)
 
-        resent_expander.show_all()
-        resent_expander.set_expanded(False)
+            view = WebKit.WebView()
+            view.set_size_request(1, 1)
+            view.load_html_string(self.extra_html, "file:///")
+            extra_expander.add(view)
+
+            extra_expander.set_expanded(False)
 
 
 class AnswerBox(Gtk.VBox):
@@ -181,31 +182,30 @@ class MailViewer(Gtk.ScrolledWindow):
 
         self.show_all()
 
-    def set_thread(self, thread):
+    def __add_messages(self, thread):
         def add_mail(message):
             box = MailBox(message)
             self.mailboxes.append(box)
             self.mailboxes_canvas.pack_start(box, False, False, 0)
 
+        for message in thread["messages"]:
+            ##GObject.idle_add(add_mail, message)
+            add_mail(message)
+
+    def set_thread(self, thread):
         if self.mailboxes != []:
             self.clear()
 
-        for message in thread["messages"]:
-            add_mail(message)
-
         self.headerbox.set_data(thread)
-
+        self.__add_messages(thread)
         self.show_all()
 
     def clear(self):
-        def _cb():
-            while self.mailboxes != []:
-                box = self.mailboxes[0]
-                self.mailboxes_canvas.remove(box)
-                self.mailboxes.remove(box)
-                del box
+        while self.mailboxes != []:
+            box = self.mailboxes[0]
+            self.mailboxes_canvas.remove(box)
+            self.mailboxes.remove(box)
+            del box
 
-            del self.mailboxes
-            self.mailboxes = []
-
-        GObject.idle_add(_cb)
+        del self.mailboxes
+        self.mailboxes = []

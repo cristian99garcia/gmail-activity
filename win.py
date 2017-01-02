@@ -43,11 +43,8 @@ class Window(Gtk.Window):
 
         self.view_type = None
 
-        width = 560
-        height = self.get_preferred_height_for_width(width)[0]  # Evit Gtk warnings spam
-
         self.set_title("Client")
-        self.set_default_size(width, height)
+        self.set_default_size(680, 480)
         self.maximize()
         self.connect("destroy", Gtk.main_quit)
 
@@ -56,6 +53,7 @@ class Window(Gtk.Window):
         self.client.connect("loading", self.__start_load)
         self.client.connect("loaded", self.__end_load)
         self.client.connect("thread-loaded", self.__thread_loaded_cb)
+        self.client.connect("message-loaded", self.__message_loaded_cb)
 
         hbox = Gtk.HBox()
         self.add(hbox)
@@ -90,10 +88,14 @@ class Window(Gtk.Window):
         self.set_view(ViewType.MAILS_LIST)
         GObject.idle_add(load_data)
 
-    def __thread_loaded_cb(self, client):
-        thread = self.client.get_thread()
+    def __thread_loaded_cb(self, client, threadid):
+        thread = self.client.get_thread(threadid)
         self.mail_viewer.set_thread(thread)
         self.set_view(ViewType.MAIL)
+
+    def __message_loaded_cb(self, client, messageid):
+        message = self.client.get_message(messageid)
+        print messageid, message
 
     def __label_selected_cb(self, view, labelid):
         print "LABEL SELECTED", labelid

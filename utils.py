@@ -18,6 +18,8 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+import base64
+
 from gettext import gettext as _
 
 
@@ -53,10 +55,52 @@ def get_date_string(data):
     year = values[2]
     time = values[3]
 
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     month = str(months.index(month) + 1).zfill(2)
 
     if True:  # TODO: get format
         return "%s/%s/%s" % (day, month, year)
     else:
         return "%s/%s/%s" % (month, day, year)
+
+
+def get_message_parts(message):
+    parts = []
+
+    if "payload" in message.keys():
+        parts += message["payload"]["parts"]
+
+    for part in parts:
+        if "parts" in part.keys():
+            parts += part["parts"]
+
+    return parts
+
+
+def load_html_data(message):
+    message_html = None
+    extra_html = None
+    parts = get_message_parts(message)
+
+    splitter = "<div class=\"gmail_extra\">"
+
+    if parts == []:
+        print "NO TIENE PARTS", message
+        return
+
+    for part in parts:
+        if part["mimeType"] == "text/html":
+            html = base64.urlsafe_b64decode(str(part["body"]["data"]))
+            if splitter in html:
+                message_html = html.split(splitter)[0]
+                extra_html = splitter + html.split(splitter, 1)[1]
+            else:
+                message_html = html
+
+        elif part["mimeType"] == "image/jpeg":
+            """
+            with open(part["filename"], "wb") as file:
+                file.write(base64.decodestring(part["body"]["attachmentId"]))
+            """
+
+    return message_html, extra_html

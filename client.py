@@ -49,7 +49,8 @@ class Client(GObject.GObject):
         "profile-loaded": (GObject.SIGNAL_RUN_LAST, None, []),
         "loading": (GObject.SIGNAL_RUN_LAST, None, []),
         "loaded": (GObject.SIGNAL_RUN_LAST, None, []),
-        "thread-loaded": (GObject.SIGNAL_RUN_LAST, None, []),
+        "thread-loaded": (GObject.SIGNAL_RUN_LAST, None, [str]),
+        "message-loaded": (GObject.SIGNAL_RUN_LAST, None, [str]),
     }
 
     def __init__(self):
@@ -59,8 +60,10 @@ class Client(GObject.GObject):
         self.service = None
         self.profile = {}
         self.threads = {}
+        self.loaded_threads = {}
         self.labels = {}
         self.thread = {}
+        self.messages = {}
 
     def __load(self):
         http = self.credentials.authorize(httplib2.Http())
@@ -81,8 +84,9 @@ class Client(GObject.GObject):
         if self.service is None:
             return
 
-        self.thread = self.service.users().threads().get(userId="me", id=threadid).execute()
-        self.emit("thread-loaded")
+        thread = self.service.users().threads().get(userId="me", id=threadid).execute()
+        self.loaded_threads[threadid] = thread
+        self.emit("thread-loaded", threadid)
 
     def start(self):
         self.load()
@@ -105,8 +109,13 @@ class Client(GObject.GObject):
     def get_labels(self):
         return self.labels
 
-    def get_thread(self):
-        return self.thread
+    def get_thread(self, threadid):
+        if threadid in self.loaded_threads:
+            return self.loaded_threads[threadid]
+
+    def get_message(self, messageid):
+        if messageid in self.messages.keys():
+            return self.messages[messageid]
 
     def get_credentials(self):
         store = Storage(CREDENTIALS_FILE)
