@@ -47,6 +47,7 @@ class Window(Gtk.Window):
         self.set_default_size(680, 480)
         self.maximize()
         self.connect("destroy", Gtk.main_quit)
+        self.connect("realize", self.__realize_cb)
 
         self.client = Client()
         self.client.connect("profile-loaded", self.__profile_loaded_cb)
@@ -68,9 +69,10 @@ class Window(Gtk.Window):
 
         self.mail_viewer = MailViewer()
 
-        self.client.start()
-
         self.show_all()
+
+    def __realize_cb(self, widget):
+        self.client.start()
 
     def __profile_loaded_cb(self, client):
         self.loading_view.set_profile(self.client.get_profile())

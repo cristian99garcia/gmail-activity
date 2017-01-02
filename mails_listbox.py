@@ -79,9 +79,7 @@ class LabelsListBox(TreeView):
         # label, id
         TreeView.__init__(self, Gtk.ListStore(str, str), 1)
 
-        width = 200
-        height = self.get_preferred_height_for_width(width)[0]  # Evit Gtk warning spam
-        self.set_size_request(width, height)
+        self.set_size_request(200, 1)
 
         renderer_text = Gtk.CellRendererText()
         column_text = Gtk.TreeViewColumn("Label", renderer_text, text=0)
