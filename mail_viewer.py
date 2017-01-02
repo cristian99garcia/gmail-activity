@@ -40,6 +40,7 @@ class ThreadHeaderBox(Gtk.HBox):
 
         self.subject_label = Gtk.Label()
         self.subject_label.modify_font(Pango.FontDescription("20"))
+        self.subject_label.set_ellipsize(Pango.EllipsizeMode.END)
         self.pack_start(self.subject_label, False, False, 0)
 
         self.important_button = Gtk.CheckButton()
@@ -53,6 +54,7 @@ class ThreadHeaderBox(Gtk.HBox):
             for header in message["payload"]["headers"]:
                 if header["name"] == "Subject":
                     self.subject_label.set_label(header["value"])
+                    self.subject_label.set_tooltip_text(header["value"])
                     return
 
         #self.important_button.set_active("IMPORTANT" in mail["labelIds"])
@@ -105,7 +107,14 @@ class MailBox(Gtk.VBox):
 
         to_label = Gtk.Label(_("To ") + data["To"])
         to_label.props.xalign = 0  # set_xalign(Gtk.Align.START)
+        to_label.set_ellipsize(Pango.EllipsizeMode.END)
         vbox.pack_start(to_label, False, False, 0)
+
+        tooltip = ""
+        for to in data["To"].split(", "):
+            tooltip += to + "\n"
+
+        to_label.set_tooltip_text(tooltip[:-1])
 
         time_label = Gtk.Label(get_date_string(data["Date"]))
         self.headerbox.pack_end(time_label, False, False, 0)
