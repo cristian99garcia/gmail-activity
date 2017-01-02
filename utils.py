@@ -110,7 +110,6 @@ def make_html_from_text(text):
 
 
 def get_message_parts(message):
-    message = data
     parts = []
 
     if "payload" in message.keys():

@@ -1,0 +1,6 @@
+[Activity]
+name = Gmail
+activity_version = 1
+bundle_id = org.sugarlabs.SugarGmail
+icon = icon
+exec = sugar-activity activity.Gmail
