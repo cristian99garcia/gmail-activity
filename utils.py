@@ -18,11 +18,13 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+import re
 import base64
 
 from gettext import gettext as _
 
 TABS = ["", "", "", "", ""]
+
 
 def get_label_name(label_id):
     if label_id == "CATEGORY_PERSONAL":
@@ -77,11 +79,51 @@ def get_date_string(data):
         return "%s/%s/%s" % (month, day, year)
 
 
+def get_urls(text):
+    return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
+
+
+def make_html_from_text(text):
+    urls = get_urls(text)
+    replaced_urls = []
+    spaced_start_p = '<p style="margin-top: 15px; margin-bottom: 1px;">'
+    start_p = '<p style="margin-top: 1px; margin-bottom: 1px;">'
+    end_p = "</p>"
+
+    idx = 0
+    for url in urls:
+        if not url in replaced_urls:
+            text = text.replace(url, '<a href="###%d###">###%d###</a>' % (idx, idx))
+            replaced_urls.append(url)
+            idx += 1
+
+    for x in range(0, len(replaced_urls)):
+        text = text.replace(
+            '<a href="###%d###">###%d###</a>' % (x, x),
+            '<a href="%s">%s</a>' % (replaced_urls[x], replaced_urls[x]))
+
+    text = text.replace('<a href="<a href="', '<a href="')
+    html = text.replace("\n", end_p + start_p)
+    html = html.replace(end_p + start_p + end_p + start_p, end_p + spaced_start_p)
+    html = "<!DOCTYPE html><head></head><body>" + start_p + html + end_p + "</body>"
+    return html
+
+
 def get_message_parts(message):
+    message = data
     parts = []
 
     if "payload" in message.keys():
-        parts += message["payload"]["parts"]
+        if "parts" in message["payload"]:
+            parts += message["payload"]["parts"]
+
+        elif "body" in message["payload"]:
+            part = {
+                "body": message["payload"]["body"],
+                "mimeType": message["payload"]["mimeType"],
+            }
+
+            parts.append(part)
 
     for part in parts:
         if "parts" in part.keys():
@@ -109,6 +151,9 @@ def load_html_data(message):
                 extra_html = splitter + html.split(splitter, 1)[1]
             else:
                 message_html = html
+
+        elif part["mimeType"] == "text/plain":
+            message_html = make_html_from_text(base64.decodestring(str(part["body"]["data"])))
 
         elif part["mimeType"] == "image/jpeg":
             """
