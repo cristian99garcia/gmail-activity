@@ -47,10 +47,10 @@ CREDENTIALS_FILE = os.path.expanduser("~/.gmail-credentials.json")
 class Client(GObject.GObject):
 
     __gsignals__ = {
-        "profile-loaded": (GObject.SIGNAL_RUN_LAST, None, []),
-        "loading": (GObject.SIGNAL_RUN_LAST, None, []),
-        "loaded": (GObject.SIGNAL_RUN_LAST, None, []),
-        "thread-loaded": (GObject.SIGNAL_RUN_LAST, None, [str]),
+        "profile-loaded": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+        "loading": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
+        "loaded": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT]),
+        "thread-loaded": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
     }
 
     def __init__(self):
@@ -58,52 +58,44 @@ class Client(GObject.GObject):
 
         self.credentials = None
         self.service = None
-        self.profile = {}
-        self.threads = {}
         self.loaded_threads = {}
-        self.labels = {}
-        self.thread = {}
 
     def __load(self):
         http = self.credentials.authorize(httplib2.Http())
         self.service = discovery.build("gmail", "v1", http=http)
         
-        self.profile = self.service.users().getProfile(userId="me").execute()
-        self.emit("profile-loaded")
+        profile = self.service.users().getProfile(userId="me").execute()
+        self.emit("profile-loaded", profile)
 
+        threads = {}
         for tab in TABS:
             results = self.service.users().threads().list(userId="me", labelIds=tab, maxResults=25).execute()
-            self.threads[tab] = results.get("threads", [])
+            threads[tab] = results.get("threads", [])
 
         results = self.service.users().labels().list(userId='me').execute()
-        self.labels = results.get("labels", [])
+        labels = results.get("labels", [])
 
-        self.emit("loaded")
+        self.emit("loaded", threads, labels)
 
-    def __load_thread(self, threadid):
+    def request_thread(self, threadid):
+        self.emit("loading")
+
         if self.service is None:
             return
 
         thread = self.service.users().threads().get(userId="me", id=threadid).execute()
-        self.loaded_threads[threadid] = thread
-        self.emit("thread-loaded", threadid)
+        self.emit("thread-loaded", thread)
 
     def start(self):
+        self.emit("loading")
+
         if self.credentials is None:
             self.credentials = self.get_credentials()
 
-        self.load()
-
-    def load(self):
-        if self.credentials is None:
-            return
-
-        self.emit("loading")
+        self.__load()
 
         # Gdk.threads_enter()
-        thread = threading.Thread(target=self.__load)
-        thread.deamon = True
-        thread.start()
+        #thread.setDaemon(True)
         # Gdk.threads_leave()
         # self.__load()
 
@@ -111,9 +103,6 @@ class Client(GObject.GObject):
 
     def get_profile(self):
         return self.profile
-
-    def get_threads(self):
-        return self.threads
 
     def get_labels(self):
         return self.labels
@@ -132,10 +121,3 @@ class Client(GObject.GObject):
             credentials = tools.run_flow(flow, store)
         
         return credentials
-
-    def request_thread(self, threadid):
-        self.emit("loading")
-        # thread = threading.Thread(target=self.__load_thread, args=(threadid,))
-        # thread.deamon = True
-        # thread.start()
-        self.__load_thread(threadid)

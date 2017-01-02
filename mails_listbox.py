@@ -18,6 +18,8 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+import unicodedata
+
 from constants import TABS
 from constants import CATEGORIES
 from utils import get_label_name
@@ -117,14 +119,11 @@ class ThreadsListBox(TreeView):
         self.model[path][0] = not self.model[path][0]
 
     def set_threads(self, threads):
-        def add(snippet, id, historyid):
-            try:
-                self.model.append([False, snippet, id, historyid])
-            except:
-                print "error", id
-
         for thread in threads:
-            GObject.idle_add(add, thread["snippet"], thread["id"], thread["historyId"])
+            snippet = unicodedata.normalize("NFKD", thread["snippet"]).encode("ascii", "ignore")
+            id = unicodedata.normalize("NFKD", thread["id"]).encode("ascii", "ignore")
+            historyid = unicodedata.normalize("NFKD", thread["historyId"]).encode("ascii", "ignore")
+            self.model.append([False, snippet, id, historyid])
 
         self.show_all()
 

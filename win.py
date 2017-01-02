@@ -18,6 +18,8 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+import threading
+
 from client import Client
 from mail_viewer import MailViewer
 from loading_view import LoadingView
@@ -27,6 +29,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
+from gi.repository import GLib
 from gi.repository import GObject
 
 
@@ -72,25 +75,23 @@ class Window(Gtk.Window):
         self.show_all()
 
     def __realize_cb(self, widget):
-        self.client.start()
+        thread = threading.Thread(target=self.client.start)
+        thread.start()
 
-    def __profile_loaded_cb(self, client):
-        self.loading_view.set_profile(self.client.get_profile())
+    def __profile_loaded_cb(self, client, profile):
+        self.loading_view.set_profile(profile)
 
     def __start_load(self, client):
         self.set_view(ViewType.LOADING)
 
-    def __end_load(self, client):
-        def load_data():
-            self.mails_listbox.set_threads(self.client.get_threads())
-            self.mails_listbox.set_labels(self.client.get_labels())
-
+    def __end_load(self, client, threads, labels):
         self.loading_view.stop()
         self.set_view(ViewType.MAILS_LIST)
-        GObject.idle_add(load_data)
 
-    def __thread_loaded_cb(self, client, threadid):
-        thread = self.client.get_thread(threadid)
+        GLib.idle_add(self.mails_listbox.set_threads, threads)
+        GLib.idle_add(self.mails_listbox.set_labels, labels)
+
+    def __thread_loaded_cb(self, client, thread):
         self.mail_viewer.set_thread(thread)
         self.set_view(ViewType.MAIL)
 
@@ -98,6 +99,8 @@ class Window(Gtk.Window):
         print "LABEL SELECTED", labelid
 
     def __thread_selected_cb(self, view, threadid):
+        #thread = threading.Thread(target=self.client.request_thread, args=(threadid,))
+        #thread.start()
         self.client.request_thread(threadid)
 
     def set_view(self, view_type):
