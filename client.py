@@ -22,6 +22,8 @@ import os
 import httplib2
 import threading
 
+from constants import TABS
+
 from googleapiclient import discovery
 from oauth2client import client
 from oauth2client import tools
@@ -50,7 +52,6 @@ class Client(GObject.GObject):
         "loading": (GObject.SIGNAL_RUN_LAST, None, []),
         "loaded": (GObject.SIGNAL_RUN_LAST, None, []),
         "thread-loaded": (GObject.SIGNAL_RUN_LAST, None, [str]),
-        "message-loaded": (GObject.SIGNAL_RUN_LAST, None, [str]),
     }
 
     def __init__(self):
@@ -63,7 +64,6 @@ class Client(GObject.GObject):
         self.loaded_threads = {}
         self.labels = {}
         self.thread = {}
-        self.messages = {}
 
     def __load(self):
         http = self.credentials.authorize(httplib2.Http())
@@ -72,8 +72,9 @@ class Client(GObject.GObject):
         self.profile = self.service.users().getProfile(userId="me").execute()
         self.emit("profile-loaded")
 
-        results = self.service.users().threads().list(userId="me", labelIds="CATEGORY_PERSONAL").execute()
-        self.threads = results.get("threads", [])
+        for tab in TABS:
+            results = self.service.users().threads().list(userId="me", labelIds=tab, maxResults=25).execute()
+            self.threads[tab] = results.get("threads", [])
 
         results = self.service.users().labels().list(userId='me').execute()
         self.labels = results.get("labels", [])
@@ -112,10 +113,6 @@ class Client(GObject.GObject):
     def get_thread(self, threadid):
         if threadid in self.loaded_threads:
             return self.loaded_threads[threadid]
-
-    def get_message(self, messageid):
-        if messageid in self.messages.keys():
-            return self.messages[messageid]
 
     def get_credentials(self):
         store = Storage(CREDENTIALS_FILE)

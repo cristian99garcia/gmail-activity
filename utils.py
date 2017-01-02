@@ -22,10 +22,23 @@ import base64
 
 from gettext import gettext as _
 
+TABS = ["", "", "", "", ""]
 
 def get_label_name(label_id):
-    if label_id in ["CATEGORY_PERSONAL"]:#, "CATEGORY_SOCIAL", "CATEGORY_FORUMS", "CATEGORY_UPDATES"]:
-        return _("Received")
+    if label_id == "CATEGORY_PERSONAL":
+        return _("Principal")
+
+    elif label_id == "CATEGORY_SOCIAL":
+        return _("Social")
+
+    elif label_id == "CATEGORY_PROMOTIONS":
+        return _("Promotions")
+
+    elif label_id == "CATEGORY_UPDATES":
+        return _("Updates")
+
+    elif label_id == "CATEGORY_FORUMS":
+        return _("Forums")
 
     elif label_id == "STARRED":
         return _("Starred")

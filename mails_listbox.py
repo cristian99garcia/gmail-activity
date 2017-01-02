@@ -18,12 +18,15 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
+from constants import TABS
+from constants import CATEGORIES
 from utils import get_label_name
 
 import gi
 gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import Pango
 from gi.repository import GObject
 
@@ -42,15 +45,32 @@ class TreeView(Gtk.ScrolledWindow):
 
         self.view = Gtk.TreeView()
         self.view.set_model(self.model)
+        self.view.set_headers_visible(False)
+        self.view.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.view.connect("button-press-event", self.__button_press_cb)
         self.add(self.view)
 
         selection = self.view.get_selection()
+        selection.set_mode(Gtk.SelectionMode.MULTIPLE)
         selection.connect("changed", self.__selection_changed_cb)
 
     def __selection_changed_cb(self, selection):
-        model, treeiter = selection.get_selected()
-        if treeiter is not None:
-            self.emit("selected", model[treeiter][self.data_id])
+        # model, treeiter = selection.get_selected()
+        # if treeiter is not None:
+        #     self.emit("selected", model[treeiter][self.data_id])
+        pass
+
+    def __button_press_cb(self, widget, event):
+        if event.button != 1:
+            return
+
+        if event.type == Gdk.EventType._2BUTTON_PRESS:
+            path = self.view.get_path_at_pos(event.x, event.y)
+            if path is not None:
+                path = path[0]
+                iter = self.model.get_iter(path)
+                value = self.model.get_value(iter, self.data_id)
+                self.emit("selected", value)
 
 
 class LabelsListBox(TreeView):
@@ -63,28 +83,26 @@ class LabelsListBox(TreeView):
         height = self.get_preferred_height_for_width(width)[0]  # Evit Gtk warning spam
         self.set_size_request(width, height)
 
-        self.labels = ["CATEGORY_PERSONAL", "STARRED", "IMPORANT", "SENT", "SPAM", "TRASH"]
-
         renderer_text = Gtk.CellRendererText()
         column_text = Gtk.TreeViewColumn("Label", renderer_text, text=0)
         self.view.append_column(column_text)
 
-    def set_labels(self, labels):
-        def add_label(label):
+        for label in CATEGORIES:
             self.model.append([get_label_name(label), label])
 
-        for label in self.labels:
-            GObject.idle_add(add_label, label)
-
         self.show_all()
+
+    def set_labels(self, labels):
+        pass
 
 
 class ThreadsListBox(TreeView):
 
-    def __init__(self):
+    def __init__(self, category):
         # important, text, id, history id
         TreeView.__init__(self, Gtk.ListStore(bool, str, str, str), 2)
 
+        self.category = category
         self.set_size_request(300, 1)
 
         renderer_toggle = Gtk.CellRendererToggle()
@@ -93,6 +111,7 @@ class ThreadsListBox(TreeView):
         self.view.append_column(column_toggle)
 
         renderer_text = Gtk.CellRendererText()
+        renderer_text.set_property("ellipsize", Pango.EllipsizeMode.END)
         column_text = Gtk.TreeViewColumn("Mail", renderer_text, text=1)
         self.view.append_column(column_text)
 
@@ -100,20 +119,36 @@ class ThreadsListBox(TreeView):
         self.model[path][0] = not self.model[path][0]
 
     def set_threads(self, threads):
-        """
-        def add_thread(idx):
-            thread = threads[idx]
-            self.model.append([False, thread["snippet"], thread["id"], thread["historyId"]])
-            idx += 1
-            if idx < len(threads):
-                GObject.idle_add(add_thread, idx)
-
-        GObject.idle_add(add_thread, 0)
-        """
         for thread in threads:
             self.model.append([False, thread["snippet"], thread["id"], thread["historyId"]])
 
         self.show_all()
+
+
+class ThreadsNotebook(Gtk.Notebook):
+
+    __gsignals__ = {
+        "thread-selected": (GObject.SIGNAL_RUN_LAST, None, [str]),
+    }
+
+    def __init__(self):
+        Gtk.Notebook.__init__(self)
+
+        self.listboxes = {}
+
+        for tab in TABS:
+            label = Gtk.Label(get_label_name(tab))
+            listbox = ThreadsListBox(tab)
+            listbox.connect("selected", self.__thread_selected_cb)
+            self.append_page(listbox, label)
+            self.child_set_property(listbox, "tab-expand", True)
+
+            self.listboxes[tab] = listbox
+
+        self.show_all()
+
+    def __thread_selected_cb(self, listbox, threadid):
+        self.emit("thread-selected", threadid)
 
 
 class MailsListBox(Gtk.HBox):
@@ -130,14 +165,15 @@ class MailsListBox(Gtk.HBox):
         self.labels_view.connect("selected", self.__label_selected_cb)
         self.pack_start(self.labels_view, False, False, 0)
 
-        self.threads_listbox = ThreadsListBox()
-        self.threads_listbox.connect("selected", self.__thread_selected_cb)
-        self.pack_start(self.threads_listbox, True, True, 0)
+        self.threads_notebook = ThreadsNotebook()
+        self.threads_notebook.connect("thread-selected", self.__thread_selected_cb)
+        self.pack_start(self.threads_notebook, True, True, 0)
 
         self.show_all()
 
     def set_threads(self, threads):
-        self.threads_listbox.set_threads(threads)
+        for tab in threads.keys():
+            self.threads_notebook.listboxes[tab].set_threads(threads[tab])
 
     def set_labels(self, labels):
         self.labels_view.set_labels(labels)
@@ -145,5 +181,5 @@ class MailsListBox(Gtk.HBox):
     def __label_selected_cb(self, listbox, labelid):
         self.emit("label-selected", labelid)
 
-    def __thread_selected_cb(self, listbox, threadid):
+    def __thread_selected_cb(self, notebook, threadid):
         self.emit("thread-selected", threadid)

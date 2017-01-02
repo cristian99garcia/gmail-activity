@@ -53,7 +53,6 @@ class Window(Gtk.Window):
         self.client.connect("loading", self.__start_load)
         self.client.connect("loaded", self.__end_load)
         self.client.connect("thread-loaded", self.__thread_loaded_cb)
-        self.client.connect("message-loaded", self.__message_loaded_cb)
 
         hbox = Gtk.HBox()
         self.add(hbox)
@@ -92,10 +91,6 @@ class Window(Gtk.Window):
         thread = self.client.get_thread(threadid)
         self.mail_viewer.set_thread(thread)
         self.set_view(ViewType.MAIL)
-
-    def __message_loaded_cb(self, client, messageid):
-        message = self.client.get_message(messageid)
-        print messageid, message
 
     def __label_selected_cb(self, view, labelid):
         print "LABEL SELECTED", labelid
