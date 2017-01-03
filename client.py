@@ -35,9 +35,6 @@ gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk
 from gi.repository import GObject
 
-# GObject.threads_init()
-
-
 SCOPES = "https://mail.google.com/"
 CLIENT_SECRET_FILE = "client_secret.json"
 APPLICATION_NAME = "Sugar Gmail"
@@ -51,6 +48,7 @@ class Client(GObject.GObject):
         "loading": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
         "loaded": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT, GObject.TYPE_PYOBJECT]),
         "thread-loaded": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+        "error": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
     }
 
     def __init__(self):
@@ -58,7 +56,6 @@ class Client(GObject.GObject):
 
         self.credentials = None
         self.service = None
-        self.loaded_threads = {}
 
     def __load(self):
         http = self.credentials.authorize(httplib2.Http())
@@ -90,26 +87,15 @@ class Client(GObject.GObject):
         self.emit("loading")
 
         if self.credentials is None:
-            self.credentials = self.get_credentials()
+            try:
+                self.credentials = self.get_credentials()
+            except:
+                self.emit("error")
 
-        self.__load()
-
-        # Gdk.threads_enter()
-        #thread.setDaemon(True)
-        # Gdk.threads_leave()
-        # self.__load()
-
-        # GObject.idle_add(self.__load)
-
-    def get_profile(self):
-        return self.profile
-
-    def get_labels(self):
-        return self.labels
-
-    def get_thread(self, threadid):
-        if threadid in self.loaded_threads:
-            return self.loaded_threads[threadid]
+        try:
+            self.__load()
+        except:
+            self.emit("error")
 
     def get_credentials(self):
         store = Storage(CREDENTIALS_FILE)
