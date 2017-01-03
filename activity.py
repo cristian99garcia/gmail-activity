@@ -42,6 +42,7 @@ class Gmail(activity.Activity):
         self.make_toolbar()
 
         self.canvas = GmailCanvas()
+        self.canvas.connect("history-changed", self._history_changed_cb)
         self.set_canvas(self.canvas)
 
         self.show_all()
@@ -55,6 +56,16 @@ class Gmail(activity.Activity):
 
         toolbarbox.toolbar.insert(Gtk.SeparatorToolItem(), -1)
 
+        self.back_button = ToolButton("go-previous-paired")
+        self.back_button.set_sensitive(False)
+        self.back_button.connect("clicked", self._go_back)
+        toolbarbox.toolbar.insert(self.back_button, -1)
+
+        self.forward_button = ToolButton("go-next-paired")
+        self.forward_button.set_sensitive(False)
+        self.forward_button.connect("clicked", self._go_forward)
+        toolbarbox.toolbar.insert(self.forward_button, -1)
+
         separator = Gtk.SeparatorToolItem()
         separator.props.draw = False
         separator.set_expand(True)
@@ -63,3 +74,14 @@ class Gmail(activity.Activity):
         button = StopButton(self)
         toolbarbox.toolbar.insert(button, -1)
 
+    def _history_changed_cb(self, canvas):
+        self.back_button.set_sensitive(self.canvas.can_go_back())
+        self.forward_button.set_sensitive(self.canvas.can_go_forward())
+
+    def _go_back(self, button):
+        if self.canvas.can_go_back():
+            self.canvas.go_back()
+
+    def _go_forward(self, button):
+        if self.canvas.can_go_forward():
+            self.canvas.go_forward()

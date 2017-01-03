@@ -41,10 +41,15 @@ class ViewType:
 
 class GmailCanvas(Gtk.VBox):
 
+    __gsignals__ = {
+        "history-changed": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
+    }
+
     def __init__(self):
         Gtk.VBox.__init__(self)
 
         self.view_type = None
+        self.forward_view = None
 
         self.client = Client()
         self.client.connect("profile-loaded", self.__profile_loaded_cb)
@@ -96,7 +101,7 @@ class GmailCanvas(Gtk.VBox):
         #thread.start()
         self.client.request_thread(threadid)
 
-    def set_view(self, view_type):
+    def set_view(self, view_type, emit=True):
         if view_type == self.view_type:
             return
 
@@ -121,4 +126,25 @@ class GmailCanvas(Gtk.VBox):
         if child is not None:
             self.view_box.pack_start(child, True, True, 0)
 
+        if emit:
+            self.forward_view = None if self.view_type != ViewType.MAIL else self.forward_view
+            self.emit("history-changed")
+
         self.show_all()
+
+    def can_go_back(self):
+        return self.view_type in [ViewType.MAIL]
+
+    def can_go_forward(self):
+        return self.forward_view is not None
+
+    def go_back(self):
+        current = self.view_type
+        self.set_view(ViewType.MAILS_LIST, False)
+        self.forward_view = current
+        self.emit("history-changed")
+
+    def go_forward(self):
+        self.set_view(self.forward_view, False)
+        self.forward_view = None
+        self.emit("history-changed")
