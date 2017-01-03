@@ -477,8 +477,12 @@ class Redactor(Gtk.VBox):
         labels = ["SENT"]
 
         if self.thread is not None:
-            threadid = unicode_to_string(self.thread["payload"]["threadId"])
-            labels = get_string_list(self.thread["payload"]["labelIds"])
+            if "payload" in self.thread:
+                if "threadId" in self.thread["payload"]:
+                    threadid = unicode_to_string(self.thread["payload"]["threadId"])
+
+                if "labelIds" in self.thread["payload"]:
+                    labels = get_string_list(self.thread["payload"]["labelIds"])
 
         if self.profile is not None:
             address = self.profile["emailAddress"]
