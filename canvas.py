@@ -74,7 +74,11 @@ class GmailCanvas(Gtk.VBox):
         self.mails_listbox.connect("thread-selected", self.__thread_selected_cb)
 
         self.mail_viewer = MailViewer()
+        self.mail_viewer.connect("send", self.__send_cb)
+
         self.redactor = Redactor()
+        self.redactor.connect("send", self.__send_cb)
+
         self.error_viewer = ErrorViewer()
 
         self.viewers = {
@@ -121,6 +125,11 @@ class GmailCanvas(Gtk.VBox):
         #thread = threading.Thread(target=self.client.request_thread, args=(threadid,))
         #thread.start()
         self.client.request_thread(threadid)
+
+    def __send_cb(self, widget, data):
+        print "SEND", data
+        thread = threading.Thread(target=self.client.send, args=(data,))
+        thread.start()
 
     def __update_buttons(self):
         invalids = [ViewType.NULL, ViewType.LOADING]

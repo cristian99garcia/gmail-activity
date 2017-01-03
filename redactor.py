@@ -472,9 +472,8 @@ class Redactor(Gtk.VBox):
     def get_data(self):
         html = make_html_from_text(self.editor.get_text_with_tags())
         encoded = base64.urlsafe_b64encode(html)
-        recipients = self.to_entry.get_text().split(" ")
-        threadid = ""
-        address = ""
+        threadid = None
+        address = None
         labels = ["SENT"]
 
         if self.thread is not None:
@@ -486,7 +485,6 @@ class Redactor(Gtk.VBox):
 
         body = {
             "data": encoded,
-            "attachmentId": "REPLACEME",
             "size": sys.getsizeof(encoded),
         }
 
@@ -500,20 +498,8 @@ class Redactor(Gtk.VBox):
                 "value": get_current_date_string()
             },
             {
-                "name": "Message-ID",
-                "value": "REPLACEME"
-            },
-            {
                 "name": "Subject",
                 "value": self.subject_entry.get_text()
-            },
-            {
-                "name": "From",
-                "value": address  # TODO: get name too
-            },
-            {
-                "name": "To",
-                "value": recipients[0]  # TODO: send to all
             },
             {
                 "name": "Content-Type",
@@ -521,9 +507,14 @@ class Redactor(Gtk.VBox):
             }
         ]
 
+        if address is not None:
+            headers.append({ "name": "From", "value": address })
+
+        if self.to_entry.get_text().strip() != "":
+            recipients = self.to_entry.get_text().split(" ")
+            headers.append({ "name": "To", "value": recipients[0] })  # TODO: send to all
+
         message = {
-            "internalDate": "REPLACEME",
-            "historyId": "REPLACEME",
             "payload": {
                 "body": body,
                 "mimeType": "text/html",
@@ -534,10 +525,11 @@ class Redactor(Gtk.VBox):
             },
             "snippet": self.editor.get_text().replace("\n", " ")[:100],
             "sizeEstimate": sys.getsizeof(encoded),
-            "threadId": threadid,
             "labelIds": labels,
-            "id": "REPLACEME",
         }
+
+        if threadid is not None:
+            message["threadId"] = threadid
 
         return message
 

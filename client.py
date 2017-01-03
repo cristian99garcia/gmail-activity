@@ -75,10 +75,10 @@ class Client(GObject.GObject):
         self.emit("loaded", threads, labels)
 
     def request_thread(self, threadid):
-        self.emit("loading")
-
         if self.service is None:
             return
+
+        self.emit("loading")
 
         thread = self.service.users().threads().get(userId="me", id=threadid).execute()
         self.emit("thread-loaded", thread)
@@ -96,6 +96,12 @@ class Client(GObject.GObject):
             self.__load()
         except:
             self.emit("error")
+
+    def send(self, mail):
+        if self.service is None:
+            return
+
+        new_data = self.service.users().messages().send(userId="me", body=mail).execute()
 
     def get_credentials(self):
         store = Storage(CREDENTIALS_FILE)

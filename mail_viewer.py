@@ -153,6 +153,10 @@ class MailBox(Gtk.VBox):
 
 class MailViewer(Gtk.ScrolledWindow):
 
+    __gsignals__ = {
+        "send": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+    }
+
     def __init__(self):
         Gtk.ScrolledWindow.__init__(self)
 
@@ -172,9 +176,13 @@ class MailViewer(Gtk.ScrolledWindow):
         self.canvas.pack_start(self.mailboxes_canvas, True, True, 0)
 
         self.redactor = Redactor()
+        self.redactor.connect("send", self.__send_cb)
         self.canvas.pack_end(self.redactor, False, False, 0)
 
         self.show_all()
+
+    def __send_cb(self, redactor, data):
+        self.emit("send", data)
 
     def __add_messages(self, thread):
         def add_mail(message):
