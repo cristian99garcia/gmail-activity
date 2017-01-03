@@ -47,6 +47,7 @@ class ViewType:
 class GmailCanvas(Gtk.VBox):
 
     __gsignals__ = {
+        "update-buttons": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
         "history-changed": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
     }
 
@@ -94,6 +95,7 @@ class GmailCanvas(Gtk.VBox):
 
     def __profile_loaded_cb(self, client, profile):
         self.loading_view.set_profile(profile)
+        self.mail_viewer.set_profile(profile)
 
     def __start_load(self, client):
         self.set_view(ViewType.LOADING)
@@ -120,8 +122,23 @@ class GmailCanvas(Gtk.VBox):
         #thread.start()
         self.client.request_thread(threadid)
 
+    def __update_buttons(self):
+        invalids = [ViewType.NULL, ViewType.LOADING]
+        self.forward_view = ViewType.NULL if self.view_type in invalids else self.forward_view
+        print self.forward_view
+
+        data = {
+            "back": self.view_type in [ViewType.MAIL, ViewType.REDACT],
+            "forward": self.forward_view not in [ViewType.NULL, ViewType.ERROR],
+            "redact": self.view_type == ViewType.MAILS_LIST
+        }
+
+        self.emit("update-buttons", data)
+
     def show_redacter(self):
-        self.set_view(ViewType.REDACT)
+        self.set_view(ViewType.REDACT, False)
+        self.forward_view = ViewType.NULL
+        self.__update_buttons()
 
     def set_view(self, view_type, emit=True):
         if view_type == self.view_type:
@@ -145,25 +162,19 @@ class GmailCanvas(Gtk.VBox):
             self.view_box.pack_start(child, True, True, 0)
 
         if emit:
-            invalids = [ViewType.MAIL, ViewType.NULL, ViewType.LOADING]
-            self.forward_view = ViewType.NULL if self.view_type in invalids else self.forward_view
-            self.emit("history-changed")
+            self.__update_buttons()
 
         self.show_all()
-
-    def can_go_back(self):
-        return self.view_type in [ViewType.MAIL]
-
-    def can_go_forward(self):
-        return self.forward_view not in [ViewType.NULL, ViewType.ERROR]
 
     def go_back(self):
         current = self.view_type
         self.set_view(ViewType.MAILS_LIST, False)
         self.forward_view = current
-        self.emit("history-changed")
+
+        self.__update_buttons()
 
     def go_forward(self):
-        self.set_view(self.forward_view, False)
-        self.forward_view = None
-        self.emit("history-changed")
+        self.set_view(self.forward_view)
+        self.forward_view = ViewType.NULL
+
+        self.__update_buttons()

@@ -42,7 +42,7 @@ class Gmail(activity.Activity):
         self.make_toolbar()
 
         self.canvas = GmailCanvas()
-        self.canvas.connect("history-changed", self._history_changed_cb)
+        self.canvas.connect("update-buttons", self._update_buttons_cb)
         self.set_canvas(self.canvas)
 
         self.show_all()
@@ -70,6 +70,7 @@ class Gmail(activity.Activity):
 
         self.redact_button = ToolButton("document-send")
         self.redact_button.set_tooltip(_("Redact"))
+        self.redact_button.set_sensitive(False)
         self.redact_button.connect("clicked", self._redact)
         toolbarbox.toolbar.insert(self.redact_button, -1)
 
@@ -81,17 +82,16 @@ class Gmail(activity.Activity):
         button = StopButton(self)
         toolbarbox.toolbar.insert(button, -1)
 
-    def _history_changed_cb(self, canvas):
-        self.back_button.set_sensitive(self.canvas.can_go_back())
-        self.forward_button.set_sensitive(self.canvas.can_go_forward())
+    def _update_buttons_cb(self, canvas, data):
+        self.back_button.set_sensitive(data["back"])
+        self.forward_button.set_sensitive(data["forward"])
+        self.redact_button.set_sensitive(data["redact"])
 
     def _go_back(self, button):
-        if self.canvas.can_go_back():
-            self.canvas.go_back()
+        self.canvas.go_back()
 
     def _go_forward(self, button):
-        if self.canvas.can_go_forward():
-            self.canvas.go_forward()
+        self.canvas.go_forward()
 
     def _redact(self, button):
         # TODO: Don't call when is loading, in a error, etc

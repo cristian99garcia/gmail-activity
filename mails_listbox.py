@@ -18,11 +18,10 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-import unicodedata
-
 from constants import TABS
 from constants import CATEGORIES
 from utils import get_label_name
+from utils import unicode_to_string
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -120,9 +119,9 @@ class ThreadsListBox(TreeView):
 
     def set_threads(self, threads):
         for thread in threads:
-            snippet = unicodedata.normalize("NFKD", thread["snippet"]).encode("ascii", "ignore")
-            id = unicodedata.normalize("NFKD", thread["id"]).encode("ascii", "ignore")
-            historyid = unicodedata.normalize("NFKD", thread["historyId"]).encode("ascii", "ignore")
+            snippet = unicode_to_string(thread["snippet"])
+            id = unicode_to_string(thread["id"])
+            historyid = unicode_to_string(thread["historyId"])
             self.model.append([False, snippet, id, historyid])
 
         self.show_all()

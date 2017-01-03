@@ -20,6 +20,7 @@
 
 from gettext import gettext as _
 
+from redacter import Redacter
 from utils import load_html_data
 from utils import get_date_string
 
@@ -150,22 +151,6 @@ class MailBox(Gtk.VBox):
             extra_expander.set_expanded(False)
 
 
-class AnswerBox(Gtk.VBox):
-
-    def __init__(self):
-        Gtk.VBox.__init__(self)
-
-        self.set_size_request(1, 100)
-
-        scroll = Gtk.ScrolledWindow()
-        self.pack_start(scroll, True, True, 0)
-
-        self.view = Gtk.TextView()
-        scroll.add(self.view)
-
-        self.show_all()
-
-
 class MailViewer(Gtk.ScrolledWindow):
 
     def __init__(self):
@@ -186,8 +171,8 @@ class MailViewer(Gtk.ScrolledWindow):
         self.mailboxes_canvas = Gtk.VBox()
         self.canvas.pack_start(self.mailboxes_canvas, True, True, 0)
 
-        self.answerbox = AnswerBox()
-        self.canvas.pack_end(self.answerbox, False, False, 0)
+        self.redacter = Redacter()
+        self.canvas.pack_end(self.redacter, False, False, 0)
 
         self.show_all()
 
@@ -206,8 +191,12 @@ class MailViewer(Gtk.ScrolledWindow):
             self.clear()
 
         self.headerbox.set_data(thread)
+        self.redacter.set_thread(thread)
         self.__add_messages(thread)
         self.show_all()
+
+    def set_profile(self, profile):
+        self.redacter.set_profile(profile)
 
     def clear(self):
         while self.mailboxes != []:

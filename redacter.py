@@ -23,6 +23,9 @@ import base64
 
 from gettext import gettext as _
 
+from utils import get_string_dict
+from utils import get_string_list
+from utils import unicode_to_string
 from utils import make_html_from_text
 from utils import get_current_date_string
 
@@ -31,16 +34,23 @@ gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import Pango
 from gi.repository import GObject
 
 
 class Editor(Gtk.TextView):
 
-    def __init__(self):
+    __gsignals__ = {
+        "changed": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
+        "update-buttons": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
+    }
+
+    def __init__(self, placeholder=None):
         Gtk.TextView.__init__(self)
 
-        self.placeholder = _("Click here if you want reply or forward the message")
-        self.buffer = self.get_buffer()
+        self.placeholder = placeholder
+        self.text = ""
+        self.cursor_position = 0
 
         if hasattr(self, "set_top_margin"):
             self.set_top_margin(5)
@@ -50,24 +60,151 @@ class Editor(Gtk.TextView):
 
         self.set_left_margin(5)
         self.set_right_margin(5)
+        self.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+
+        self.buffer = self.get_buffer()
+        self.tag_bold = self.buffer.create_tag("bold", weight=Pango.Weight.BOLD)
+        self.tag_italic = self.buffer.create_tag("italic", style=Pango.Style.ITALIC)
+        self.tag_underline = self.buffer.create_tag("underline", underline=Pango.Underline.SINGLE)
+        self.buffer.connect("mark-set", self.__mark_set_cb)
 
         self.reset()
 
-        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.connect("button-press-event", self.__button_press_cb)
+        self.connect("key-release-event", self.__key_release_cb)
+
+    def __mark_set_cb(self, widget, location, mark):
+        if self.buffer.props.cursor_position != self.cursor_position:
+            self.cursor_position = self.buffer.props.cursor_position
+            self.emit("update-buttons")
 
     def __button_press_cb(self, button, event):
         if event.button == 1 and not self.edited:
             self.edited = True
             self.buffer.set_text("")
 
+    def __key_release_cb(self, button, event):
+        if not self.edited:
+            self.edited = True
+            self.buffer.set_text("")
+
+        else:
+            text = self.get_text()
+            if self.text != text:
+                self.text = text
+                self.emit("changed")
+
     def reset(self):
         self.edited = False
-        self.buffer.set_text(self.placeholder)
+
+        if self.placeholder is not None:
+            self.buffer.set_text(self.placeholder)
 
     def get_text(self):
         start, end = self.buffer.get_bounds()
-        return self.buffer.get_text(start, end, 1)
+        return self.buffer.get_text(start, end, False)
+
+    def get_text_with_tags(self):
+        start, end = self.buffer.get_bounds()
+        text = ""
+        bold = False
+        italic = False
+        underline = False
+        for x in range(start.get_offset(), end.get_offset() + 1):
+            iter = self.buffer.get_iter_at_offset(x)
+            char = self.buffer.get_text(start, iter, False)
+            start = iter
+
+            text += char
+
+            if iter.has_tag(self.tag_bold) and not bold:
+                bold = True
+                text += "<b>"
+
+            elif not iter.has_tag(self.tag_bold) and bold:
+                bold = False
+                text += "</b>"
+
+            if iter.has_tag(self.tag_italic) and not italic:
+                italic = True
+                text += "<i>"
+
+            elif not iter.has_tag(self.tag_italic) and italic:
+                italic = False
+                text += "</i>"
+
+            if iter.has_tag(self.tag_underline) and not underline:
+                underline = True
+                text += "<u>"
+
+            elif not iter.has_tag(self.tag_underline) and underline:
+                underline = False
+                text += "</u>"
+
+        return text
+
+    def apply_bold(self):
+        self.apply_tag(self.tag_bold)
+
+    def remove_bold(self):
+        self.remove_tag(self.tag_bold)
+
+    def apply_italic(self):
+        self.apply_tag(self.tag_italic)
+
+    def remove_italic(self):
+        self.remove_tag(self.tag_italic)
+
+    def apply_underline(self):
+        self.apply_tag(self.tag_underline)
+
+    def remove_underline(self):
+        self.remove_tag(self.tag_underline)
+
+    def apply_tag(self, tag):
+        bounds = self.buffer.get_selection_bounds()
+        if not bounds:
+            iter = self.buffer.get_iter_at_offset(self.buffer.props.cursor_position)
+            bounds = (iter, iter)
+
+        start, end = bounds
+        self.buffer.apply_tag(tag, start, end)
+        self.emit("changed")
+
+    def remove_tag(self, tag):
+        bounds = self.buffer.get_selection_bounds()
+        if not bounds:
+            iter = self.buffer.get_iter_at_offset(self.buffer.props.cursor_position)
+            bounds = (iter, iter)
+
+        start, end = bounds
+        self.buffer.remove_tag(tag, start, end)
+        self.emit("changed")
+
+    def get_bold_at_cursor(self):
+        return self.get_tag_at_cursor(self.tag_bold)
+
+    def get_italic_at_cursor(self):
+        return self.get_tag_at_cursor(self.tag_italic)
+
+    def get_underline_at_cursor(self):
+        return self.get_tag_at_cursor(self.tag_underline)
+
+    def get_tag_at_cursor(self, tag):
+        bounds = self.buffer.get_selection_bounds()
+        if not bounds:
+            iter = self.buffer.get_iter_at_offset(self.buffer.props.cursor_position - 1)
+            return iter.has_tag(tag)
+
+        else:
+            start, end = bounds
+            for x in range(start.get_offset(), end.get_offset()):
+                iter = self.buffer.get_iter_at_offset(x)
+                if not iter.has_tag(tag):
+                    return False
+
+            return True
 
 
 class RemoveButton(Gtk.EventBox):
@@ -227,13 +364,17 @@ class AddressEntry(EntryBox):
 
 class Redacter(Gtk.VBox):
 
-    def __init__(self, threadid=None, address=None):
+    __gsignals__ = {
+        "send": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+    }
+
+    def __init__(self, thread=None):
         Gtk.VBox.__init__(self)
 
-        self.threadid = threadid
-        self.address = address
+        self.thread = None
+        self.profile = None
 
-        self.set_margin_top(3)
+        self.set_margin_top(8)
         self.set_margin_bottom(8)
         self.set_margin_left(8)
         self.set_margin_right(8)
@@ -243,35 +384,102 @@ class Redacter(Gtk.VBox):
         self.cco_entry = AddressEntry(_("Cco:"))
         self.subject_entry = EntryBox(_("Subject:"))
 
-        grid = Gtk.Grid()
-        self.pack_start(grid, False, False, 5)
+        self.grid = Gtk.Grid()
+        self.pack_start(self.grid, False, False, 0)
 
-        if self.threadid is None:
-            grid.attach(self.to_entry.label,  0, 0, 1, 1)
-            grid.attach(self.to_entry.scroll, 1, 0, 1, 1)
+        if self.thread is None:
+            self.grid.attach(self.to_entry.label,  0, 0, 1, 1)
+            self.grid.attach(self.to_entry.scroll, 1, 0, 1, 1)
 
-            grid.attach(self.cc_entry.label,  0, 1, 1, 1)
-            grid.attach(self.cc_entry.scroll, 1, 1, 1, 1)
+            self.grid.attach(self.cc_entry.label,  0, 1, 1, 1)
+            self.grid.attach(self.cc_entry.scroll, 1, 1, 1, 1)
 
-            grid.attach(self.cco_entry.label,  0, 2, 1, 1)
-            grid.attach(self.cco_entry.scroll, 1, 2, 1, 1)
+            self.grid.attach(self.cco_entry.label,  0, 2, 1, 1)
+            self.grid.attach(self.cco_entry.scroll, 1, 2, 1, 1)
 
-            grid.attach(self.subject_entry.label,   0, 3, 1, 1)
-            grid.attach(self.subject_entry.scroll,  1, 3, 1, 1)
+            self.grid.attach(self.subject_entry.label,   0, 3, 1, 1)
+            self.grid.attach(self.subject_entry.scroll,  1, 3, 1, 1)
+
+        self.editorbox = Gtk.VBox()
+        self.pack_start(self.editorbox, True, True, 5)
 
         scroll = Gtk.ScrolledWindow()
         scroll.set_size_request(100, 200)
-        self.pack_start(scroll, True, True, 5)
+        self.editorbox.pack_start(scroll, True, True, 0)
 
         self.editor = Editor()
+        self.editor.connect("update-buttons", self.__update_buttons_cb)
         scroll.add(self.editor)
+
+        self.make_toolbar()
 
         self.show_all()
 
+    def __update_buttons_cb(self, editor):
+        self.button_bold.set_active(self.editor.get_bold_at_cursor())
+        self.button_italic.set_active(self.editor.get_italic_at_cursor())
+        self.button_underline.set_active(self.editor.get_underline_at_cursor())
+
+    def make_toolbar(self):
+        toolbar = Gtk.Toolbar()
+        self.editorbox.pack_end(toolbar, False, False, 0)
+
+        self.button_bold = Gtk.ToggleToolButton()
+        self.button_bold.set_tooltip_text(_("Bold"))
+        self.button_bold.set_icon_name("format-text-bold-symbolic")
+        self.button_bold.connect("toggled", self._toggle_bold)
+        toolbar.insert(self.button_bold, -1)
+
+        self.button_italic = Gtk.ToggleToolButton()
+        self.button_italic.set_tooltip_text(_("Italic"))
+        self.button_italic.set_icon_name("format-text-italic-symbolic")
+        self.button_italic.connect("toggled", self._toggle_italic)
+        toolbar.insert(self.button_italic, -1)
+
+        self.button_underline = Gtk.ToggleToolButton()
+        self.button_underline.set_tooltip_text(_("Underline"))
+        self.button_underline.set_icon_name("format-text-underline-symbolic")
+        self.button_underline.connect("toggled", self._toggle_underline)
+        toolbar.insert(self.button_underline, -1)
+
+        separator = Gtk.SeparatorToolItem()
+        separator.props.draw = False
+        separator.set_expand(True)
+        toolbar.insert(separator, -1)
+
+        self.button_send = Gtk.ToolButton()
+        self.button_send.set_icon_name("mail-send-symbolic")
+        self.button_send.set_tooltip_text(_("Send"))
+        self.button_send.connect("clicked", self._send_cb)
+        toolbar.insert(self.button_send, -1)
+
+    def set_profile(self, profile):
+        del self.profile
+        self.profile = get_string_dict(profile)
+
+    def set_thread(self, thread, remove_entries=True):
+        del self.thread
+        self.thread = thread
+        self.editor.placeholder = _("Click here if you want reply or forward the message")
+        self.editor.reset()
+
+        if remove_entries and self.grid.get_parent() == self:
+            self.remove(self.grid)
+
     def get_data(self):
-        html = make_html_from_text(self.editor.get_text())
+        html = make_html_from_text(self.editor.get_text_with_tags())
         encoded = base64.urlsafe_b64encode(html)
         recipients = self.to_entry.get_text().split(" ")
+        threadid = ""
+        address = ""
+        labels = ["SENT"]
+
+        if self.thread is not None:
+            threadid = unicode_to_string(self.thread["payload"]["threadId"])
+            labels = get_string_list(self.thread["payload"]["labelIds"])
+
+        if self.profile is not None:
+            address = self.profile["emailAddress"]
 
         body = {
             "data": encoded,
@@ -298,7 +506,7 @@ class Redacter(Gtk.VBox):
             },
             {
                 "name": "From",
-                "value": self.address  # TODO: get name too
+                "value": address  # TODO: get name too
             },
             {
                 "name": "To",
@@ -319,19 +527,38 @@ class Redacter(Gtk.VBox):
                 "partId": "0",
                 "filename": "",
                 "headers": headers,
-                "parts": [
-                ],
+                "parts": [],
             },
             "snippet": self.editor.get_text().replace("\n", " ")[:100],
             "sizeEstimate": sys.getsizeof(encoded),
-            "threadId": self.threadid,
-            "labelIds": [
-                "REPLACEME",
-            ],
+            "threadId": threadid,
+            "labelIds": labels,
             "id": "REPLACEME",
         }
 
         return message
+
+    def _toggle_bold(self, button):
+        if button.get_active():
+            self.editor.apply_bold()
+        else:
+            self.editor.remove_bold()
+
+    def _toggle_italic(self, button):
+        if button.get_active():
+            self.editor.apply_italic()
+        else:
+            self.editor.remove_italic()
+
+    def _toggle_underline(self, button):
+        if button.get_active():
+            self.editor.apply_underline()
+        else:
+            self.editor.remove_underline()
+
+    def _send_cb(self, button):
+        data = self.get_data()
+        self.emit("send", data)
 
 
 class Window(Gtk.Window):
@@ -348,16 +575,13 @@ class Window(Gtk.Window):
         self.add(box)
 
         self.redacter = Redacter()
+        self.redacter.connect("send", self._send_cb)
         box.pack_start(self.redacter, True, True, 0)
-
-        b = Gtk.Button("check")
-        b.connect("clicked", self.__check)
-        box.pack_end(b, False, False, 0)
 
         self.show_all()
 
-    def __check(self, button):
-        print self.redacter.get_data()
+    def _send_cb(self, redacter, data):
+        print data
 
 
 if __name__ == "__main__":

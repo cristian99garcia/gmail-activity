@@ -22,6 +22,7 @@ import re
 import time
 import base64
 import binascii
+import unicodedata
 
 from gettext import gettext as _
 
@@ -107,6 +108,44 @@ def decode64_string(text):
             return text.decode("base64")
         except:
             return text
+
+
+def unicode_to_string(unicode):
+    return unicodedata.normalize("NFKD", unicode).encode("ascii", "ignore")
+
+
+def get_string_dict(unicode_dict):
+    new_dict = {}
+
+    for key in unicode_dict.keys():
+        value = unicode_dict[key]
+        if type(key) == unicode:
+            new_key = unicode_to_string(key)
+        else:
+            new_key = key
+
+        if type(value) == unicode:
+            new_value = unicode_to_string(value)
+        else:
+            new_value = value
+
+        new_dict[new_key] = new_value 
+
+    return new_dict
+
+
+def get_string_list(unicode_list):
+    new_list = []
+
+    for value in unicode_list:
+        if type(value) == unicode:
+            new_value = unicode_to_string(value)
+        else:
+            new_value = value
+
+        new_list.append(new_value)
+
+    return new_list
 
 
 def get_urls(text):
