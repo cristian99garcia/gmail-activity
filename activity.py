@@ -66,6 +66,13 @@ class Gmail(activity.Activity):
         self.forward_button.connect("clicked", self._go_forward)
         toolbarbox.toolbar.insert(self.forward_button, -1)
 
+        toolbarbox.toolbar.insert(Gtk.SeparatorToolItem(), -1)
+
+        self.redact_button = ToolButton("document-send")
+        self.redact_button.set_tooltip(_("Redact"))
+        self.redact_button.connect("clicked", self._redact)
+        toolbarbox.toolbar.insert(self.redact_button, -1)
+
         separator = Gtk.SeparatorToolItem()
         separator.props.draw = False
         separator.set_expand(True)
@@ -85,3 +92,7 @@ class Gmail(activity.Activity):
     def _go_forward(self, button):
         if self.canvas.can_go_forward():
             self.canvas.go_forward()
+
+    def _redact(self, button):
+        # TODO: Don't call when is loading, in a error, etc
+        self.canvas.show_redacter()

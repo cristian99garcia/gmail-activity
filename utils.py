@@ -19,6 +19,7 @@
 # Boston, MA 02111-1307, USA.
 
 import re
+import time
 import base64
 import binascii
 
@@ -26,6 +27,8 @@ from gettext import gettext as _
 
 TABS = ["", "", "", "", ""]
 MAIL_SPLITTERS = ["<div class=\"gmail_extra\">", "---------- Forwarded message ----------"]
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 def get_label_name(label_id):
@@ -72,13 +75,28 @@ def get_date_string(data):
     year = values[2]
     time = values[3]
 
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    month = str(months.index(month) + 1).zfill(2)
+    month = str(MONTHS.index(month) + 1).zfill(2)
 
-    if True:  # TODO: get format
+    if True:  # TODO: get local format
         return "%s/%s/%s" % (day, month, year)
     else:
         return "%s/%s/%s" % (month, day, year)
+
+
+def get_current_date_string():
+    data = time.localtime()
+    date = "%s, %d %s %d %d:%d:%d -0300" % (
+        DAYS[data.tm_wday],
+        data.tm_mday,
+        MONTHS[data.tm_mon - 1],
+        data.tm_year,
+        data.tm_hour,
+        data.tm_min,
+        data.tm_sec
+    )
+
+    # TODO: get and replace local timezone (-0300)
+    return date
 
 
 def decode64_string(text):

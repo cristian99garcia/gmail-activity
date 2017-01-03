@@ -21,6 +21,7 @@
 import threading
 
 from client import Client
+from redacter import Redacter
 from mail_viewer import MailViewer
 from error_viewer import ErrorViewer
 from loading_view import LoadingView
@@ -39,7 +40,8 @@ class ViewType:
     LOADING    = 1
     MAILS_LIST = 2
     MAIL       = 3
-    ERROR      = 4
+    REDACT     = 4
+    ERROR      = 5
 
 
 class GmailCanvas(Gtk.VBox):
@@ -71,7 +73,16 @@ class GmailCanvas(Gtk.VBox):
         self.mails_listbox.connect("thread-selected", self.__thread_selected_cb)
 
         self.mail_viewer = MailViewer()
+        self.redacter = Redacter()
         self.error_viewer = ErrorViewer()
+
+        self.viewers = {
+            ViewType.LOADING: self.loading_view,
+            ViewType.MAILS_LIST: self.mails_listbox,
+            ViewType.MAIL: self.mail_viewer,
+            ViewType.REDACT: self.redacter,
+            ViewType.ERROR: self.error_viewer,
+        }
 
         self.connect("realize", self.__realize_cb)
 
@@ -109,6 +120,9 @@ class GmailCanvas(Gtk.VBox):
         #thread.start()
         self.client.request_thread(threadid)
 
+    def show_redacter(self):
+        self.set_view(ViewType.REDACT)
+
     def set_view(self, view_type, emit=True):
         if view_type == self.view_type:
             return
@@ -119,20 +133,13 @@ class GmailCanvas(Gtk.VBox):
             self.view_box.remove(self.view_box.get_children()[0])
 
         child = None
+        if self.view_type in self.viewers.keys():
+            child = self.viewers[self.view_type]
+
         if self.view_type == ViewType.LOADING:
             self.loading_view.start()
-            child = self.loading_view
-
-        elif self.view_type == ViewType.MAILS_LIST:
-            child = self.mails_listbox
+        else:
             self.loading_view.stop()
-
-        elif self.view_type == ViewType.MAIL:
-            child = self.mail_viewer
-            self.loading_view.stop()
-
-        elif self.view_type == ViewType.ERROR:
-            child = self.error_viewer
 
         if child is not None:
             self.view_box.pack_start(child, True, True, 0)
