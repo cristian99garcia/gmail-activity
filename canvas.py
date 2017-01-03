@@ -125,7 +125,6 @@ class GmailCanvas(Gtk.VBox):
     def __update_buttons(self):
         invalids = [ViewType.NULL, ViewType.LOADING]
         self.forward_view = ViewType.NULL if self.view_type in invalids else self.forward_view
-        print self.forward_view
 
         data = {
             "back": self.view_type in [ViewType.MAIL, ViewType.REDACT],
