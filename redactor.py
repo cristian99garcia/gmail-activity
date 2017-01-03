@@ -362,7 +362,7 @@ class AddressEntry(EntryBox):
         return text
 
 
-class Redacter(Gtk.VBox):
+class Redactor(Gtk.VBox):
 
     __gsignals__ = {
         "send": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
@@ -373,6 +373,7 @@ class Redacter(Gtk.VBox):
 
         self.thread = None
         self.profile = None
+        self.__change_style = True
 
         self.set_margin_top(8)
         self.set_margin_bottom(8)
@@ -416,9 +417,11 @@ class Redacter(Gtk.VBox):
         self.show_all()
 
     def __update_buttons_cb(self, editor):
+        self.__change_style = False
         self.button_bold.set_active(self.editor.get_bold_at_cursor())
         self.button_italic.set_active(self.editor.get_italic_at_cursor())
         self.button_underline.set_active(self.editor.get_underline_at_cursor())
+        self.__change_style = True
 
     def make_toolbar(self):
         toolbar = Gtk.Toolbar()
@@ -539,22 +542,25 @@ class Redacter(Gtk.VBox):
         return message
 
     def _toggle_bold(self, button):
-        if button.get_active():
-            self.editor.apply_bold()
-        else:
-            self.editor.remove_bold()
+        if self.__change_style:
+            if button.get_active():
+                self.editor.apply_bold()
+            else:
+                self.editor.remove_bold()
 
     def _toggle_italic(self, button):
-        if button.get_active():
-            self.editor.apply_italic()
-        else:
-            self.editor.remove_italic()
+        if self.__change_style:
+            if button.get_active():
+                self.editor.apply_italic()
+            else:
+                self.editor.remove_italic()
 
     def _toggle_underline(self, button):
-        if button.get_active():
-            self.editor.apply_underline()
-        else:
-            self.editor.remove_underline()
+        if self.__change_style:
+            if button.get_active():
+                self.editor.apply_underline()
+            else:
+                self.editor.remove_underline()
 
     def _send_cb(self, button):
         data = self.get_data()
@@ -574,13 +580,13 @@ class Window(Gtk.Window):
         box = Gtk.VBox()
         self.add(box)
 
-        self.redacter = Redacter()
-        self.redacter.connect("send", self._send_cb)
-        box.pack_start(self.redacter, True, True, 0)
+        self.redactor = Redactor()
+        self.redactor.connect("send", self._send_cb)
+        box.pack_start(self.redactor, True, True, 0)
 
         self.show_all()
 
-    def _send_cb(self, redacter, data):
+    def _send_cb(self, redactor, data):
         print data
 
 

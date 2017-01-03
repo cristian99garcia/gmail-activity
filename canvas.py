@@ -21,7 +21,7 @@
 import threading
 
 from client import Client
-from redacter import Redacter
+from redactor import Redactor
 from mail_viewer import MailViewer
 from error_viewer import ErrorViewer
 from loading_view import LoadingView
@@ -74,14 +74,14 @@ class GmailCanvas(Gtk.VBox):
         self.mails_listbox.connect("thread-selected", self.__thread_selected_cb)
 
         self.mail_viewer = MailViewer()
-        self.redacter = Redacter()
+        self.redactor = Redactor()
         self.error_viewer = ErrorViewer()
 
         self.viewers = {
             ViewType.LOADING: self.loading_view,
             ViewType.MAILS_LIST: self.mails_listbox,
             ViewType.MAIL: self.mail_viewer,
-            ViewType.REDACT: self.redacter,
+            ViewType.REDACT: self.redactor,
             ViewType.ERROR: self.error_viewer,
         }
 
@@ -135,7 +135,7 @@ class GmailCanvas(Gtk.VBox):
 
         self.emit("update-buttons", data)
 
-    def show_redacter(self):
+    def show_redactor(self):
         self.set_view(ViewType.REDACT, False)
         self.forward_view = ViewType.NULL
         self.__update_buttons()

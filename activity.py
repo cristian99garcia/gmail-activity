@@ -95,4 +95,4 @@ class Gmail(activity.Activity):
 
     def _redact(self, button):
         # TODO: Don't call when is loading, in a error, etc
-        self.canvas.show_redacter()
+        self.canvas.show_redactor()
