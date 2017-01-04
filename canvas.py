@@ -100,6 +100,7 @@ class GmailCanvas(Gtk.VBox):
     def __profile_loaded_cb(self, client, profile):
         self.loading_view.set_profile(profile)
         self.mail_viewer.set_profile(profile)
+        self.redactor.set_profile(profile)
 
     def __start_load(self, client):
         self.set_view(ViewType.LOADING)
@@ -126,9 +127,8 @@ class GmailCanvas(Gtk.VBox):
         #thread.start()
         self.client.request_thread(threadid)
 
-    def __send_cb(self, widget, data):
-        print "SEND", data
-        thread = threading.Thread(target=self.client.send, args=(data,))
+    def __send_cb(self, widget, mail):
+        thread = threading.Thread(target=self.client.send, args=(mail,))
         thread.start()
 
     def __update_buttons(self):

@@ -148,6 +148,126 @@ def get_string_list(unicode_list):
     return new_list
 
 
+def convert_to_string(data, spacer=", "):
+    text = ""
+    if type(data) == list:
+        max = len(data)
+
+        for x in range(0, max):
+            value = data[x]
+            if type(value) == unicode:
+                value = unicode_to_string(value)
+
+            text += value
+            if x < max - 1:
+                text += spacer
+
+        return text
+
+    else:
+        return data
+
+
+def deep_search(data, value):
+    if type(data) == dict:
+        if value in data.keys():
+            return data[value]
+        else:
+            for key in data.keys():
+                found = deep_search(data[key], value)
+                if found is not None:
+                    return found
+
+            return None
+
+    elif type(data) in [list, tuple]:
+        for key in data:
+            found = deep_search(key, value)
+            if found is not None:
+                return found
+
+        return None
+
+    else:
+        return None
+
+
+def search_header(data, header_name, multiple=False, multiple_list=[]):
+    def is_header_dict(value):
+        if type(value) == dict:
+            return "name" in value.keys() and "value" in value.keys()
+        else:
+            return False
+
+    if type(data) == dict:
+        if "headers" in data.keys():
+            value = search_header(data["headers"], header_name, multiple, multiple_list)
+            if multiple:
+                multiple_list.append(value)
+            else:
+                return value
+
+        elif is_header_dict(data) and data["name"] == header_name:
+            if multiple:
+                multiple_list.append(data["value"])
+            else:
+                return data["value"]
+
+        else:
+            for key in data:
+                found = search_header(data[key], header_name, multiple, multiple_list)
+                if found is not None:
+                    if multiple:
+                        multiple_list.append(found)
+                    else:
+                        return found
+
+        return multiple_list if multiple else None
+
+    elif type(data) == list:
+        for value in data:
+            if is_header_dict(value):
+                if value["name"] == header_name:
+                    if multiple:
+                        multiple_list.append(value["value"])
+                    else:
+                        return value["value"]
+
+            else:
+                found = search_header(value, header_name)
+                if found is not None:
+                    if multiple:
+                        multiple_list.append(found)
+                    else:
+                        return found
+
+        return multiple_list if multiple else None
+
+    else:
+        return multiple_list if multiple else None
+
+
+
+def clear_list(old_list, new_list=[]):
+    while old_list in old_list:
+        old_list.remove(old_list)
+
+    while new_list in new_list:
+        new_list.remove(new_list)
+
+    for value in old_list:
+        if type(value) == unicode:
+            value = unicode_to_string(value)
+        
+        if type(value) == list:
+            clear_list(value, new_list)
+
+        if not value in new_list:
+            new_list.append(value)
+
+    return new_list
+
+
 def get_urls(text):
     return re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', text)
 

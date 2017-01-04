@@ -20,11 +20,16 @@
 
 import sys
 import base64
+from email.mime.text import MIMEText
 
 from gettext import gettext as _
 
+from utils import clear_list
+from utils import deep_search
+from utils import search_header
 from utils import get_string_dict
 from utils import get_string_list
+from utils import convert_to_string
 from utils import unicode_to_string
 from utils import make_html_from_text
 from utils import get_current_date_string
@@ -469,74 +474,6 @@ class Redactor(Gtk.VBox):
         if remove_entries and self.grid.get_parent() == self:
             self.remove(self.grid)
 
-    def get_data(self):
-        html = make_html_from_text(self.editor.get_text_with_tags())
-        encoded = base64.urlsafe_b64encode(html)
-        threadid = None
-        address = None
-        labels = ["SENT"]
-
-        if self.thread is not None:
-            if "payload" in self.thread:
-                if "threadId" in self.thread["payload"]:
-                    threadid = unicode_to_string(self.thread["payload"]["threadId"])
-
-                if "labelIds" in self.thread["payload"]:
-                    labels = get_string_list(self.thread["payload"]["labelIds"])
-
-        if self.profile is not None:
-            address = self.profile["emailAddress"]
-
-        body = {
-            "data": encoded,
-            "size": sys.getsizeof(encoded),
-        }
-
-        headers = [
-            {
-                "name": "MIME-Version",
-                "value": "1.0"
-            },
-            {
-                "name": "Date",
-                "value": get_current_date_string()
-            },
-            {
-                "name": "Subject",
-                "value": self.subject_entry.get_text()
-            },
-            {
-                "name": "Content-Type",
-                "value": "text/html; charset=UTF-8"
-            }
-        ]
-
-        if address is not None:
-            headers.append({ "name": "From", "value": address })
-
-        if self.to_entry.get_text().strip() != "":
-            recipients = self.to_entry.get_text().split(" ")
-            headers.append({ "name": "To", "value": recipients[0] })  # TODO: send to all
-
-        message = {
-            "payload": {
-                "body": body,
-                "mimeType": "text/html",
-                "partId": "0",
-                "filename": "",
-                "headers": headers,
-                "parts": [],
-            },
-            "snippet": self.editor.get_text().replace("\n", " ")[:100],
-            "sizeEstimate": sys.getsizeof(encoded),
-            "labelIds": labels,
-        }
-
-        if threadid is not None:
-            message["threadId"] = threadid
-
-        return message
-
     def _toggle_bold(self, button):
         if self.__change_style:
             if button.get_active():
@@ -559,33 +496,36 @@ class Redactor(Gtk.VBox):
                 self.editor.remove_underline()
 
     def _send_cb(self, button):
-        data = self.get_data()
-        self.emit("send", data)
+        data = make_html_from_text(self.editor.get_text_with_tags())
 
+        message = MIMEText(data)
+        message.set_type("text/html")
+        message["from"] = self.profile["emailAddress"]
 
-class Window(Gtk.Window):
+        recipients = self.to_entry.get_text().split(" ")
+        mail = {}
 
-    def __init__(self):
-        Gtk.Window.__init__(self)
+        info = {
+            "threadid": deep_search(self.thread, "threadId"),
+            "to": convert_to_string(clear_list(search_header(self.thread, "To", multiple=True))),
+            "subject": search_header(self.thread, "Subject")
+        }
 
-        self.view_type = None
+        if self.thread is None:
+            message["subject"] = self.subject_entry.get_text()
+            message["to"] = get_string_list(recipients)
 
-        self.set_default_size(680, 480)
-        self.connect("destroy", Gtk.main_quit)
+        else:
+            message["subject"] = info["subject"] or ""
 
-        box = Gtk.VBox()
-        self.add(box)
+            if info["to"] is not None:
+                recipients.insert(0, info["to"])
 
-        self.redactor = Redactor()
-        self.redactor.connect("send", self._send_cb)
-        box.pack_start(self.redactor, True, True, 0)
+            if info["to"] is not None:
+                    message["to"] = info["to"]
 
-        self.show_all()
+            if info["threadid"] is not None:
+                mail["threadId"] = info["threadid"]
 
-    def _send_cb(self, redactor, data):
-        print data
-
-
-if __name__ == "__main__":
-    win = Window()
-    Gtk.main()
+        mail["raw"] = base64.urlsafe_b64encode(message.as_string())
+        self.emit("send", mail)
