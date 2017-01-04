@@ -21,6 +21,7 @@
 from gettext import gettext as _
 
 from redactor import Redactor
+from utils import deep_search
 from utils import load_html_data
 from utils import get_date_string
 
@@ -161,6 +162,8 @@ class MailViewer(Gtk.ScrolledWindow):
         Gtk.ScrolledWindow.__init__(self)
 
         self.mailboxes = []
+        self.thread = None
+        self.threadid = None
 
         self.canvas = Gtk.VBox()
         self.canvas.set_margin_top(20)
@@ -191,17 +194,34 @@ class MailViewer(Gtk.ScrolledWindow):
             self.mailboxes_canvas.pack_start(box, False, False, 0)
 
         for message in thread["messages"]:
-            ##GObject.idle_add(add_mail, message)
-            add_mail(message)
+            add = True
+            for box in self.mailboxes:
+                if box.mail == message:
+                    add = False
+                    break
+
+            if add:
+                add_mail(message)
 
     def set_thread(self, thread):
-        if self.mailboxes != []:
-            self.clear()
+        if self.threadid is not None:
+            new_thread = deep_search(thread, "threadId")
+            if new_thread == self.threadid:
+                self.__add_messages(thread)
+                self.redactor.reset()
 
-        self.headerbox.set_data(thread)
-        self.redactor.set_thread(thread)
-        self.__add_messages(thread)
-        self.show_all()
+        else:
+            if self.mailboxes != []:
+                self.clear()
+
+            self.thread = thread
+            self.threadid = deep_search(self.thread, "threadId")
+
+            self.headerbox.set_data(thread)
+            self.redactor.set_thread(thread)
+            self.__add_messages(thread)
+
+            self.show_all()
 
     def set_profile(self, profile):
         self.redactor.set_profile(profile)
@@ -215,3 +235,9 @@ class MailViewer(Gtk.ScrolledWindow):
 
         del self.mailboxes
         self.mailboxes = []
+
+        del self.thread
+        self.thread = None
+
+        del self.threadid
+        self.threadid = None

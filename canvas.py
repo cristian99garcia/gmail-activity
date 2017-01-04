@@ -67,6 +67,7 @@ class GmailCanvas(Gtk.VBox):
         self.client.connect("error", self.__error_cb)
         self.client.connect("login", self.__login_cb)
         self.client.connect("logged", self.__logged_cb)
+        self.client.connect("mail-sent", self.__mail_sent_cb)
 
         self.view_box = Gtk.VBox()
         self.pack_start(self.view_box, True, True, 0)
@@ -135,6 +136,9 @@ class GmailCanvas(Gtk.VBox):
         #thread = threading.Thread(target=self.client.load)
         #thread.start()
         self.client.load()
+
+    def __mail_sent_cb(self, client, mail):
+        self.client.request_thread(mail["threadId"])
 
     def __label_selected_cb(self, view, labelid):
         print "LABEL SELECTED", labelid

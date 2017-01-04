@@ -53,6 +53,7 @@ class Client(GObject.GObject):
         "error": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
         "login": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]),
         "logged": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
+        "mail-sent": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
     }
 
     def __init__(self):
@@ -102,6 +103,7 @@ class Client(GObject.GObject):
             return
 
         new_data = self.service.users().messages().send(userId="me", body=mail).execute()
+        self.emit("mail-sent", new_data)
 
     def get_credentials(self):
         self.__storage = Storage(CREDENTIALS_FILE)

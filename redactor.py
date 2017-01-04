@@ -474,6 +474,9 @@ class Redactor(Gtk.VBox):
         if remove_entries and self.grid.get_parent() == self:
             self.remove(self.grid)
 
+    def reset(self):
+        self.editor.reset()
+
     def _toggle_bold(self, button):
         if self.__change_style:
             if button.get_active():
