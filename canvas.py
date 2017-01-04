@@ -23,6 +23,7 @@ import threading
 from client import Client
 from redactor import Redactor
 from mail_viewer import MailViewer
+from login_screen import LoginScreen
 from error_viewer import ErrorViewer
 from loading_view import LoadingView
 from mails_listbox import MailsListBox
@@ -36,12 +37,13 @@ from gi.repository import GObject
 
 
 class ViewType:
-    NULL       = 0
-    LOADING    = 1
-    MAILS_LIST = 2
-    MAIL       = 3
-    REDACT     = 4
-    ERROR      = 5
+    NULL         = 0
+    LOADING      = 1
+    MAILS_LIST   = 2
+    MAIL         = 3
+    REDACT       = 4
+    LOGIN_SCREEN = 5
+    ERROR        = 6
 
 
 class GmailCanvas(Gtk.VBox):
@@ -63,6 +65,8 @@ class GmailCanvas(Gtk.VBox):
         self.client.connect("loaded", self.__end_load)
         self.client.connect("thread-loaded", self.__thread_loaded_cb)
         self.client.connect("error", self.__error_cb)
+        self.client.connect("login", self.__login_cb)
+        self.client.connect("logged", self.__logged_cb)
 
         self.view_box = Gtk.VBox()
         self.pack_start(self.view_box, True, True, 0)
@@ -79,6 +83,8 @@ class GmailCanvas(Gtk.VBox):
         self.redactor = Redactor()
         self.redactor.connect("send", self.__send_cb)
 
+        self.login_screen = LoginScreen()
+        self.login_screen.connect("send-code", self.__send_code_cb)
         self.error_viewer = ErrorViewer()
 
         self.viewers = {
@@ -86,6 +92,7 @@ class GmailCanvas(Gtk.VBox):
             ViewType.MAILS_LIST: self.mails_listbox,
             ViewType.MAIL: self.mail_viewer,
             ViewType.REDACT: self.redactor,
+            ViewType.LOGIN_SCREEN: self.login_screen,
             ViewType.ERROR: self.error_viewer,
         }
 
@@ -94,8 +101,9 @@ class GmailCanvas(Gtk.VBox):
         self.show_all()
 
     def __realize_cb(self, widget):
-        thread = threading.Thread(target=self.client.start)
-        thread.start()
+        #thread = threading.Thread(target=self.client.start)
+        #thread.start()
+        self.client.start()
 
     def __profile_loaded_cb(self, client, profile):
         self.loading_view.set_profile(profile)
@@ -119,6 +127,15 @@ class GmailCanvas(Gtk.VBox):
     def __error_cb(self, client):
         self.set_view(ViewType.ERROR)
 
+    def __login_cb(self, client, url):
+        self.set_view(ViewType.LOGIN_SCREEN)
+        self.login_screen.set_url(url)
+
+    def __logged_cb(self, client):
+        #thread = threading.Thread(target=self.client.load)
+        #thread.start()
+        self.client.load()
+
     def __label_selected_cb(self, view, labelid):
         print "LABEL SELECTED", labelid
 
@@ -128,8 +145,12 @@ class GmailCanvas(Gtk.VBox):
         self.client.request_thread(threadid)
 
     def __send_cb(self, widget, mail):
-        thread = threading.Thread(target=self.client.send, args=(mail,))
-        thread.start()
+        #thread = threading.Thread(target=self.client.send, args=(mail,))
+        #thread.start()
+        self.client.send(mail)
+
+    def __send_code_cb(self, screen, code):
+        self.client.set_code(code)
 
     def __update_buttons(self):
         invalids = [ViewType.NULL, ViewType.LOADING]
