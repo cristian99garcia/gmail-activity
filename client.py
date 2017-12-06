@@ -80,6 +80,21 @@ class Client(GObject.GObject):
             )
             threads[tab] = results.get("threads", [])
 
+            # Store the ids of unread threads
+            unread_thread_ids = [item['id'] for item in  (
+                self.service.users()
+                .threads()
+                .list(userId="me", labelIds=tab, maxResults=25, q="label:UNREAD").execute()
+            ).get("threads", [])]
+
+            # Add "read" field to threads
+            for thread in threads[tab]:
+                if thread['id'] in unread_thread_ids:
+                    thread['read'] = True
+                else:
+                    thread['read'] = False
+
+
         results = self.service.users().labels().list(userId='me').execute()
         labels = results.get("labels", [])
 

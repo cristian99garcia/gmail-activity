@@ -98,21 +98,21 @@ class LabelsListBox(TreeView):
 class ThreadsListBox(TreeView):
 
     def __init__(self, category):
-        # important, text, id, history id
-        TreeView.__init__(self, Gtk.ListStore(bool, str, str, str), 2)
-
+        # important, text, id, history id, background color
+        TreeView.__init__(self, Gtk.ListStore(bool, str, str, str, str), 2)
         self.category = category
         self.set_size_request(300, 1)
-
         renderer_toggle = Gtk.CellRendererToggle()
         renderer_toggle.connect("toggled", self.__important_setted)
-        column_toggle = Gtk.TreeViewColumn("Important", renderer_toggle, active=0)
+        column_toggle = Gtk.TreeViewColumn("Important", renderer_toggle, active=0, background=4)
         self.view.append_column(column_toggle)
+
 
         renderer_text = Gtk.CellRendererText()
         renderer_text.set_property("ellipsize", Pango.EllipsizeMode.END)
-        column_text = Gtk.TreeViewColumn("Mail", renderer_text, text=1)
+        column_text = Gtk.TreeViewColumn("Mail", renderer_text, text=1, background=4)
         self.view.append_column(column_text)
+
 
     def __important_setted(self, widget, path):
         self.model[path][0] = not self.model[path][0]
@@ -122,7 +122,11 @@ class ThreadsListBox(TreeView):
             snippet = unicode_to_string(thread["snippet"])
             id = unicode_to_string(thread["id"])
             historyid = unicode_to_string(thread["historyId"])
-            self.model.append([False, snippet, id, historyid])
+
+            background_color = '#EEEEEE'
+            if not thread["read"]:
+                background_color = 'white'
+            self.model.append([False, snippet, id, historyid, background_color])
 
         self.show_all()
 
