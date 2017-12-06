@@ -49,7 +49,9 @@ class ViewType:
 class GmailCanvas(Gtk.VBox):
 
     __gsignals__ = {
-        "update-buttons": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+        "update-buttons": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]
+        ),
         "history-changed": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, []),
     }
 
@@ -102,8 +104,8 @@ class GmailCanvas(Gtk.VBox):
         self.show_all()
 
     def __realize_cb(self, widget):
-        #thread = threading.Thread(target=self.client.start)
-        #thread.start()
+        # thread = threading.Thread(target=self.client.start)
+        # thread.start()
         self.client.start()
 
     def __profile_loaded_cb(self, client, profile):
@@ -133,8 +135,8 @@ class GmailCanvas(Gtk.VBox):
         self.login_screen.set_url(url)
 
     def __logged_cb(self, client):
-        #thread = threading.Thread(target=self.client.load)
-        #thread.start()
+        # thread = threading.Thread(target=self.client.load)
+        # thread.start()
         self.client.load()
 
     def __mail_sent_cb(self, client, mail):
@@ -144,13 +146,13 @@ class GmailCanvas(Gtk.VBox):
         print "LABEL SELECTED", labelid
 
     def __thread_selected_cb(self, view, threadid):
-        #thread = threading.Thread(target=self.client.request_thread, args=(threadid,))
-        #thread.start()
+        # thread = threading.Thread(target=self.client.request_thread, args=(threadid,))
+        # thread.start()
         self.client.request_thread(threadid)
 
     def __send_cb(self, widget, mail):
-        #thread = threading.Thread(target=self.client.send, args=(mail,))
-        #thread.start()
+        # thread = threading.Thread(target=self.client.send, args=(mail,))
+        # thread.start()
         self.client.send(mail)
 
     def __send_code_cb(self, screen, code):
@@ -158,7 +160,10 @@ class GmailCanvas(Gtk.VBox):
 
     def __update_buttons(self):
         invalids = [ViewType.NULL, ViewType.LOADING]
-        self.forward_view = ViewType.NULL if self.view_type in invalids else self.forward_view
+        if self.view_type in invalids:
+            self.forward_view = ViewType.NULL
+        else:
+            self.forward_view
 
         data = {
             "back": self.view_type in [ViewType.MAIL, ViewType.REDACT],
