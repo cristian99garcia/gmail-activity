@@ -95,6 +95,11 @@ class Client(GObject.GObject):
             self.service.users().threads()
             .get(userId="me", id=threadid).execute()
         )
+        self.service.users().threads().modify(
+            userId='me',
+            id=threadid,
+            body={'removeLabelIds': ['UNREAD']}
+        ).execute()
         self.emit("thread-loaded", thread)
 
     def start(self):
