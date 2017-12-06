@@ -68,7 +68,7 @@ class Client(GObject.GObject):
 
         http = self.credentials.authorize(httplib2.Http())
         self.service = discovery.build("gmail", "v1", http=http)
-        
+
         profile = self.service.users().getProfile(userId="me").execute()
         self.emit("profile-loaded", profile)
 
@@ -76,6 +76,21 @@ class Client(GObject.GObject):
         for tab in TABS:
             results = self.service.users().threads().list(userId="me", labelIds=tab, maxResults=25).execute()
             threads[tab] = results.get("threads", [])
+
+            # Store the ids of unread threads
+            unread_thread_ids = [item['id'] for item in  (
+                self.service.users()
+                .threads()
+                .list(userId="me", labelIds=tab, maxResults=25, q="label:UNREAD").execute()
+            ).get("threads", [])]
+
+            # Add "read" field to threads
+            for thread in threads[tab]:
+                if thread['id'] in unread_thread_ids:
+                    thread['read'] = True
+                else:
+                    thread['read'] = False
+
 
         results = self.service.users().labels().list(userId='me').execute()
         labels = results.get("labels", [])
