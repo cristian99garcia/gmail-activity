@@ -31,7 +31,9 @@ from gi.repository import GObject
 class LoginScreen(Gtk.VBox):
 
     __gsignals__ = {
-        "send-code": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]),
+        "send-code": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]
+        ),
     }
 
     def __init__(self):

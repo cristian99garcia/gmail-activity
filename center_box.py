@@ -38,9 +38,9 @@ class CenterBox(Gtk.VBox):
         self.pack_start(self.__hbox, True, False, 0)
 
     def set_center_child(self, widget):
-        if self.__child != None:
+        if self.__child is not None:
             self.__hbox.remove(self.__child)
 
         self.__child = widget
-        if self.__child != None:
+        if self.__child is not None:
             self.__hbox.pack_start(self.__child, True, False, 0)

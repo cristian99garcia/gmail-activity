@@ -129,7 +129,7 @@ def get_string_dict(unicode_dict):
         else:
             new_value = value
 
-        new_dict[new_key] = new_value 
+        new_dict[new_key] = new_value
 
     return new_dict
 
@@ -258,11 +258,11 @@ def clear_list(old_list, new_list=[]):
     for value in old_list:
         if type(value) == unicode:
             value = unicode_to_string(value)
-        
+
         if type(value) == list:
             clear_list(value, new_list)
 
-        if not value in new_list:
+        if value not in new_list:
             new_list.append(value)
 
     return new_list
@@ -281,7 +281,7 @@ def make_html_from_text(text):
 
     idx = 0
     for url in urls:
-        if not url in replaced_urls:
+        if url not in replaced_urls:
             text = text.replace(url, '<a href="###%d###">###%d###</a>' % (idx, idx))
             replaced_urls.append(url)
             idx += 1

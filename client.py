@@ -68,13 +68,16 @@ class Client(GObject.GObject):
 
         http = self.credentials.authorize(httplib2.Http())
         self.service = discovery.build("gmail", "v1", http=http)
-        
+
         profile = self.service.users().getProfile(userId="me").execute()
         self.emit("profile-loaded", profile)
 
         threads = {}
         for tab in TABS:
-            results = self.service.users().threads().list(userId="me", labelIds=tab, maxResults=25).execute()
+            results = (
+                self.service.users().threads()
+                .list(userId="me", labelIds=tab, maxResults=25).execute()
+            )
             threads[tab] = results.get("threads", [])
 
         results = self.service.users().labels().list(userId='me').execute()
@@ -88,21 +91,27 @@ class Client(GObject.GObject):
 
         self.emit("loading")
 
-        thread = self.service.users().threads().get(userId="me", id=threadid).execute()
+        thread = (
+            self.service.users().threads()
+            .get(userId="me", id=threadid).execute()
+        )
         self.emit("thread-loaded", thread)
 
     def start(self):
         if self.credentials is None:
-            #try:
+            # try:
             self.get_credentials()
-            #except:
+            # except:
             #    self.emit("error")
 
     def send(self, mail):
         if self.service is None:
             return
 
-        new_data = self.service.users().messages().send(userId="me", body=mail).execute()
+        new_data = (
+            self.service.users().messages()
+            .send(userId="me", body=mail).execute()
+        )
         self.emit("mail-sent", new_data)
 
     def get_credentials(self):
@@ -110,7 +119,9 @@ class Client(GObject.GObject):
         self.credentials = self.__storage.get()
 
         if not self.credentials or self.credentials.invalid:
-            self.__flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
+            self.__flow = client.flow_from_clientsecrets(
+                CLIENT_SECRET_FILE, SCOPES
+            )
             self.__flow.user_agent = APPLICATION_NAME
             self.__run_flow()
 
@@ -124,7 +135,10 @@ class Client(GObject.GObject):
         for port in [8080, 8090]:
             port_number = port
             try:
-                tools.ClientRedirectServer(("localhost", port), tools.ClientRedirectHandler)
+                tools.ClientRedirectServer(
+                    ("localhost", port),
+                    tools.ClientRedirectHandler
+                )
 
             except socket.error:
                 pass

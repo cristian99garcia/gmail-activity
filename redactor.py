@@ -71,7 +71,9 @@ class Editor(Gtk.TextView):
         self.buffer = self.get_buffer()
         self.tag_bold = self.buffer.create_tag("bold", weight=Pango.Weight.BOLD)
         self.tag_italic = self.buffer.create_tag("italic", style=Pango.Style.ITALIC)
-        self.tag_underline = self.buffer.create_tag("underline", underline=Pango.Underline.SINGLE)
+        self.tag_underline = self.buffer.create_tag(
+            "underline", underline=Pango.Underline.SINGLE
+        )
         self.buffer.connect("mark-set", self.__mark_set_cb)
 
         self.reset()
@@ -199,7 +201,9 @@ class Editor(Gtk.TextView):
     def get_tag_at_cursor(self, tag):
         bounds = self.buffer.get_selection_bounds()
         if not bounds:
-            iter = self.buffer.get_iter_at_offset(self.buffer.props.cursor_position - 1)
+            iter = self.buffer.get_iter_at_offset(
+                self.buffer.props.cursor_position - 1
+            )
             return iter.has_tag(tag)
 
         else:
@@ -269,8 +273,12 @@ class AddressBox(Gtk.HBox):
 class EntryBox(Gtk.HBox):
 
     __gsignals__ = {
-        "changed": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]),
-        "activate": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]),
+        "changed": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]
+        ),
+        "activate": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]
+        ),
     }
 
     def __init__(self, text):
@@ -370,7 +378,9 @@ class AddressEntry(EntryBox):
 class Redactor(Gtk.VBox):
 
     __gsignals__ = {
-        "send": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+        "send": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]
+        ),
     }
 
     def __init__(self, thread=None):
@@ -510,7 +520,9 @@ class Redactor(Gtk.VBox):
 
         info = {
             "threadid": deep_search(self.thread, "threadId"),
-            "to": convert_to_string(clear_list(search_header(self.thread, "To", multiple=True))),
+            "to": convert_to_string(
+                clear_list(search_header(self.thread, "To", multiple=True))
+            ),
             "subject": search_header(self.thread, "Subject")
         }
 

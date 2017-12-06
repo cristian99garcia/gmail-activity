@@ -59,7 +59,7 @@ class ThreadHeaderBox(Gtk.HBox):
                     self.subject_label.set_tooltip_text(header["value"])
                     return
 
-        #self.important_button.set_active("IMPORTANT" in mail["labelIds"])
+        # self.important_button.set_active("IMPORTANT" in mail["labelIds"])
 
 
 class MailBox(Gtk.VBox):
@@ -68,7 +68,7 @@ class MailBox(Gtk.VBox):
         Gtk.VBox.__init__(self)
 
         self.mail = mail
-        self.views = { }
+        self.views = {}
         self.message_html = None
         self.extra_html = None
 
@@ -155,7 +155,9 @@ class MailBox(Gtk.VBox):
 class MailViewer(Gtk.ScrolledWindow):
 
     __gsignals__ = {
-        "send": (GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]),
+        "send": (
+            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_PYOBJECT]
+        ),
     }
 
     def __init__(self):
