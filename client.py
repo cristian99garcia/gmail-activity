@@ -94,6 +94,20 @@ class Client(GObject.GObject):
                 else:
                     thread['read'] = False
 
+            # Store the ids of starred threads
+            starred_thread_ids = [item['id'] for item in  (
+                self.service.users()
+                .threads()
+                .list(userId="me", labelIds=tab, maxResults=25, q="label:STARRED").execute()
+            ).get("threads", [])]
+
+            # Add "read" field to threads
+            for thread in threads[tab]:
+                if thread['id'] in starred_thread_ids:
+                    thread['STARRED'] = True
+                else:
+                    thread['STARRED'] = False
+
 
         results = self.service.users().labels().list(userId='me').execute()
         labels = results.get("labels", [])
@@ -116,6 +130,25 @@ class Client(GObject.GObject):
             body={'removeLabelIds': ['UNREAD']}
         ).execute()
         self.emit("thread-loaded", thread)
+
+    def set_star(self, threadid, starred):
+        thread = (
+            self.service.users().threads()
+            .get(userId="me", id=threadid).execute()
+        )
+        
+        if starred:
+            self.service.users().threads().modify(
+                userId='me',
+                id=threadid,
+                body={'addLabelIds': ['STARRED']}
+            ).execute()
+        else:
+            self.service.users().threads().modify(
+                userId='me',
+                id=threadid,
+                body={'removeLabelIds': ['STARRED']}
+            ).execute()
 
     def start(self):
         if self.credentials is None:

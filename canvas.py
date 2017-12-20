@@ -79,6 +79,7 @@ class GmailCanvas(Gtk.VBox):
         self.mails_listbox = MailsListBox()
         self.mails_listbox.connect("label-selected", self.__label_selected_cb)
         self.mails_listbox.connect("thread-selected", self.__thread_selected_cb)
+        self.mails_listbox.connect("favorite-clicked", self.__favorite_clicked_cb)
 
         self.mail_viewer = MailViewer()
         self.mail_viewer.connect("send", self.__send_cb)
@@ -149,6 +150,10 @@ class GmailCanvas(Gtk.VBox):
         # thread = threading.Thread(target=self.client.request_thread, args=(threadid,))
         # thread.start()
         self.client.request_thread(threadid)
+
+    def __favorite_clicked_cb(self, view, threadid, starred): 
+        self.client.set_star(threadid, starred)
+    
 
     def __send_cb(self, widget, mail):
         # thread = threading.Thread(target=self.client.send, args=(mail,))
