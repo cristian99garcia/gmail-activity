@@ -27,6 +27,8 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 from gi.repository import GObject
 
+import re
+
 
 class LoginScreen(Gtk.VBox):
 
@@ -44,8 +46,8 @@ class LoginScreen(Gtk.VBox):
         self.pack_start(self.browser, True, True, 10)
 
     def _load_finished_cb(self, browser, html):
-        if html.startswith("<!DOCTYPE html><html><head><title>Success code="):
-            code = html.split("</title>")[0].split("code=")[1]
+        if "<title>Success code=" in html:
+            code = re.search(r"<title>Success code=(.+)</title>", html).group(1)
             self.emit("send-code", code)
 
     def set_url(self, url):
