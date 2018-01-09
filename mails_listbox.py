@@ -243,3 +243,46 @@ class CellRendererFavourite(CellRendererIcon):
 
     def do_activate(self, event, widget, path, background_area, cell_area, flags):
         self.emit("clicked", path)
+
+from gi.repository import Gtk
+
+class CellRendererPixbufWindow(Gtk.Window):
+
+    def __init__(self):
+        Gtk.Window.__init__(self, title="CellRendererPixbuf Example")
+
+        self.set_default_size(200, 200)
+
+        self.liststore = Gtk.ListStore(str, str)
+        self.liststore.append(["Item 1", DESACTIVATED])
+        self.liststore.append(["Item 2", DESACTIVATED])
+        self.liststore.append(["Item 3", ACTIVATED])
+
+        treeview = Gtk.TreeView(model=self.liststore)
+
+        renderer_text = Gtk.CellRendererText()
+        column_text = Gtk.TreeViewColumn("Text", renderer_text, text=0)
+        treeview.append_column(column_text)
+
+        renderer_pixbuf = CellRendererPixbuf()
+        renderer_pixbuf.connect("clicked", self._clicked_cb)
+
+        column_pixbuf = Gtk.TreeViewColumn("Image", renderer_pixbuf, icon_name=1)
+        treeview.append_column(column_pixbuf)
+
+        self.add(treeview)
+
+    def _clicked_cb(self, cell, path):
+        state = self.liststore[path][1]
+        if state == ACTIVATED:
+            self.liststore[path][1] = DESACTIVATED
+
+        else:
+            self.liststore[path][1] = ACTIVATED
+
+
+win = CellRendererPixbufWindow()
+win.connect("delete-event", Gtk.main_quit)
+win.show_all()
+Gtk.main()
+
