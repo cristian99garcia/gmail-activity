@@ -34,6 +34,7 @@ from gi.repository import GObject
 from sugar3.graphics.icon import CellRendererIcon
 from sugar3 import profile
 
+
 class TreeView(Gtk.ScrolledWindow):
 
     __gsignals__ = {
@@ -67,7 +68,7 @@ class TreeView(Gtk.ScrolledWindow):
         if event.button != 1:
             return
 
-        if event.type == Gdk.EventType._2BUTTON_PRESS:
+        if event.type == Gdk.EventType.BUTTON_PRESS:
             path = self.view.get_path_at_pos(event.x, event.y)
             if path is not None:
                 path = path[0]
@@ -90,7 +91,6 @@ class LabelsListBox(TreeView):
 
         for label in CATEGORIES:
             self.model.append([get_label_name(label), label])
-
         self.show_all()
 
     def set_labels(self, labels):
@@ -113,7 +113,6 @@ class ThreadsListBox(TreeView):
         column_toggle = Gtk.TreeViewColumn("Important", renderer_toggle, active=0)
         self.view.append_column(column_toggle)
 
-
         cell_favorite = CellRendererFavourite()
         cell_favorite.connect('clicked', self.__favourite_clicked)
         self._fav_column = Gtk.TreeViewColumn("Starred", cell_favorite)
@@ -126,7 +125,6 @@ class ThreadsListBox(TreeView):
         column_text = Gtk.TreeViewColumn("Mail", renderer_text, text=2, background=5)
         self.view.append_column(column_text)
 
-
     def __important_setted(self, widget, path):
         self.model[path][0] = not self.model[path][0]
 
@@ -135,7 +133,7 @@ class ThreadsListBox(TreeView):
         self.emit("favorited", self.model[path][3], self.model[path][1])
 
     def __favorite_set_data(self, column, cell, tree_model,
-                               tree_iter, data):
+                            tree_iter, data):
         favorite = tree_model[tree_iter][1]
         if favorite:
             cell.props.xo_color = profile.get_color()
@@ -149,13 +147,14 @@ class ThreadsListBox(TreeView):
             historyid = unicode_to_string(thread["historyId"])
 
             background_color = '#EEEEEE'
-            if not thread["read"]:
+            if thread["UNREAD"]:
                 background_color = 'white'
 
             starred = False
             if thread["STARRED"]:
                 starred = True
-            self.model.append([False, starred, snippet, id, historyid, background_color])
+            self.model.append([False, starred, snippet, id,
+                               historyid, background_color])
 
         self.show_all()
 
@@ -202,20 +201,34 @@ class MailsListBox(Gtk.HBox):
     def __init__(self):
         Gtk.HBox.__init__(self)
 
+        self.threads = {}
+
         self.labels_view = LabelsListBox()
         self.labels_view.connect("selected", self.__label_selected_cb)
         self.pack_start(self.labels_view, False, False, 0)
 
         self.threads_notebook = ThreadsNotebook()
-        self.threads_notebook.connect("thread-selected", self.__thread_selected_cb)
-        self.threads_notebook.connect("favorite-clicked", self.__favorite_clicked_cb)
+        self.threads_notebook.connect(
+            "thread-selected", self.__thread_selected_cb)
+        self.threads_notebook.connect(
+            "favorite-clicked", self.__favorite_clicked_cb)
         self.pack_start(self.threads_notebook, True, True, 0)
 
         self.show_all()
 
     def set_threads(self, threads):
+        self.threads = threads
         for tab in threads.keys():
             self.threads_notebook.listboxes[tab].set_threads(threads[tab])
+
+    def filter(self, query):
+        for tab in self.threads.keys():
+            self.threads_notebook.listboxes[tab].model.clear()
+            valid_threads = []
+            for thread in self.threads[tab]:
+                if thread[query] or query == "INBOX":
+                    valid_threads.append(thread)
+            self.threads_notebook.listboxes[tab].set_threads(valid_threads)
 
     def set_labels(self, labels):
         self.labels_view.set_labels(labels)

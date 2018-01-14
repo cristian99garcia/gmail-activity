@@ -24,7 +24,7 @@ import socket
 import httplib2
 import threading
 
-from constants import TABS
+from constants import TABS, CATEGORIES
 
 from googleapiclient import discovery
 from oauth2client import client
@@ -76,39 +76,28 @@ class Client(GObject.GObject):
         for tab in TABS:
             results = (
                 self.service.users().threads()
-                .list(userId="me", labelIds=tab, maxResults=25).execute()
+                .list(userId="me", labelIds=tab, maxResults=25,
+                      includeSpamTrash=True).execute()
             )
             threads[tab] = results.get("threads", [])
 
-            # Store the ids of unread threads
-            unread_thread_ids = [item['id'] for item in  (
-                self.service.users()
-                .threads()
-                .list(userId="me", labelIds=tab, maxResults=25, q="label:UNREAD").execute()
-            ).get("threads", [])]
-
-            # Add "read" field to threads
-            for thread in threads[tab]:
-                if thread['id'] in unread_thread_ids:
-                    thread['read'] = True
-                else:
-                    thread['read'] = False
-
-            # Store the ids of starred threads
-            starred_thread_ids = [item['id'] for item in  (
-                self.service.users()
-                .threads()
-                .list(userId="me", labelIds=tab, maxResults=25, q="label:STARRED").execute()
-            ).get("threads", [])]
-
-            # Add "read" field to threads
-            for thread in threads[tab]:
-                if thread['id'] in starred_thread_ids:
-                    thread['STARRED'] = True
-                else:
-                    thread['STARRED'] = False
-
-
+            for category in CATEGORIES + ["UNREAD"]:
+                if category in ["UNREAD", "STARRED", "IMPORTANT"]:
+                    query = "label:" + category
+                else:  # ["INBOX", "SPAM", "TRASH", "SENT"]
+                    query = "in:" + category
+                category_thread_ids = [item['id'] for item in (
+                    self.service.users()
+                    .threads()
+                    .list(userId="me", labelIds=tab, maxResults=25, q=query)
+                    .execute()
+                ).get("threads", [])]
+                # Add "read" field to threads
+                for thread in threads[tab]:
+                    if thread['id'] in category_thread_ids:
+                        thread[category] = True
+                    else:
+                        thread[category] = False
         results = self.service.users().labels().list(userId='me').execute()
         labels = results.get("labels", [])
 
@@ -136,7 +125,7 @@ class Client(GObject.GObject):
             self.service.users().threads()
             .get(userId="me", id=threadid).execute()
         )
-        
+
         if starred:
             self.service.users().threads().modify(
                 userId='me',

@@ -19,9 +19,9 @@
 # Boston, MA 02111-1307, USA.
 
 CATEGORIES = [
-    "CATEGORY_PERSONAL",
+    "INBOX",
     "STARRED",
-    "IMPORANT",
+    "IMPORTANT",
     "SENT",
     "SPAM",
     "TRASH"
