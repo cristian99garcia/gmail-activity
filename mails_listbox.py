@@ -68,7 +68,7 @@ class TreeView(Gtk.ScrolledWindow):
         if event.button != 1:
             return
 
-        if event.type == Gdk.EventType._2BUTTON_PRESS:
+        if event.type == Gdk.EventType.BUTTON_PRESS:
             path = self.view.get_path_at_pos(event.x, event.y)
             if path is not None:
                 path = path[0]
