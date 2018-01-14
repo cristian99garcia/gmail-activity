@@ -48,10 +48,13 @@ def get_label_name(label_id):
     elif label_id == "CATEGORY_FORUMS":
         return _("Forums")
 
+    elif label_id == "INBOX":
+        return _("Inbox")
+
     elif label_id == "STARRED":
         return _("Starred")
 
-    elif label_id == "IMPORANT":
+    elif label_id == "IMPORTANT":
         return _("Important")
 
     elif label_id == "SENT":
@@ -245,7 +248,6 @@ def search_header(data, header_name, multiple=False, multiple_list=[]):
 
     else:
         return multiple_list if multiple else None
-
 
 
 def clear_list(old_list, new_list=[]):

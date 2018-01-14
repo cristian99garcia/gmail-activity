@@ -144,6 +144,7 @@ class GmailCanvas(Gtk.VBox):
         self.client.request_thread(mail["threadId"])
 
     def __label_selected_cb(self, view, labelid):
+        self.mails_listbox.filter(labelid)
         print "LABEL SELECTED", labelid
 
     def __thread_selected_cb(self, view, threadid):
@@ -151,9 +152,8 @@ class GmailCanvas(Gtk.VBox):
         # thread.start()
         self.client.request_thread(threadid)
 
-    def __favorite_clicked_cb(self, view, threadid, starred): 
+    def __favorite_clicked_cb(self, view, threadid, starred):
         self.client.set_star(threadid, starred)
-    
 
     def __send_cb(self, widget, mail):
         # thread = threading.Thread(target=self.client.send, args=(mail,))
