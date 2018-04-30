@@ -20,27 +20,25 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-gi.require_version("WebKit", "3.0")
+gi.require_version("WebKit2", "4.0")
 
 from gi.repository import Gtk
 from gi.repository import GLib
-from gi.repository import WebKit
+from gi.repository import WebKit2 as WebKit
 from gi.repository import GObject
 
 
 class Browser(Gtk.ScrolledWindow):
-
     __gsignals__ = {
-        "load-finished": (
-            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]
-        ),
+        "load-finished": (GObject.SIGNAL_RUN_FIRST, 
+                          None, (GObject.TYPE_STRING,)),
     }
 
     def __init__(self):
         Gtk.ScrolledWindow.__init__(self)
 
         self.browser = WebKit.WebView()
-        self.browser.connect("load-finished", self.__load_finished)
+        self.browser.connect("load_changed", self.__load_finished)
         self.add(self.browser)
 
         self.show_all()
@@ -49,7 +47,7 @@ class Browser(Gtk.ScrolledWindow):
         source = frame.get_data_source()
         data = source.get_data()
         if data is not None:
-            self.emit("load-finished", data.str)
+            self.emit("load_changed", data.str)
 
     def open(self, url):
-        GLib.idle_add(self.browser.open, url)
+        GLib.idle_add(self.browser.load_uri, url)
