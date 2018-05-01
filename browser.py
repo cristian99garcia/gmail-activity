@@ -29,11 +29,9 @@ from gi.repository import GObject
 
 
 class Browser(Gtk.ScrolledWindow):
-
     __gsignals__ = {
-        "load-finished": (
-            GObject.SIGNAL_RUN_LAST, GObject.TYPE_NONE, [GObject.TYPE_STRING]
-        ),
+        "load-finished": (GObject.SIGNAL_RUN_FIRST, 
+                          None, (GObject.TYPE_STRING,)),
     }
 
     def __init__(self):
