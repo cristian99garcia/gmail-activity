@@ -4,3 +4,4 @@ activity_version = 1
 bundle_id = org.sugarlabs.SugarGmail
 icon = icon
 exec = sugar-activity activity.Gmail
+license = GPLv3+;Apache 2.0;MIT;Modified BSD
