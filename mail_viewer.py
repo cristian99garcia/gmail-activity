@@ -27,11 +27,11 @@ from utils import get_date_string
 
 import gi
 gi.require_version("Gtk", "3.0")
-gi.require_version("WebKit", "3.0")
+gi.require_version("WebKit2", "4.0")
 
 from gi.repository import Gtk
 from gi.repository import Pango
-from gi.repository import WebKit
+from gi.repository import WebKit2
 from gi.repository import GObject
 
 
@@ -127,7 +127,7 @@ class MailBox(Gtk.VBox):
         self.mailbox = Gtk.VBox()
         self.pack_start(self.mailbox, False, False, 0)
 
-        view = WebKit.WebView()
+        view = WebKit2.WebView()
         self.mailbox.pack_start(view, False, False, 0)
 
         if self.message_html is not None:
@@ -144,7 +144,7 @@ class MailBox(Gtk.VBox):
             extra_expander.set_label("...")
             self.extrabox.pack_start(extra_expander, False, False, 0)
 
-            view = WebKit.WebView()
+            view = WebKit2.WebView()
             view.set_size_request(1, 1)
             view.load_html_string(self.extra_html, "file:///")
             extra_expander.add(view)

@@ -42,13 +42,13 @@ class LoginScreen(Gtk.VBox):
         Gtk.VBox.__init__(self)
 
         self.browser = Browser()
-        self.browser.connect("load-finished", self._load_finished_cb)
+        self.browser.connect("web_process_terminated", self._web_process_terminated_cb)
         self.pack_start(self.browser, True, True, 10)
 
-    def _load_finished_cb(self, browser, html):
+    def _web_process_terminated_cb(self, browser, html):
         if "<title>Success code=" in html:
             code = re.search(r"<title>Success code=(.+)</title>", html).group(1)
             self.emit("send-code", code)
 
     def set_url(self, url):
-        self.browser.open(url)
+        self.browser.load_uri(url)
