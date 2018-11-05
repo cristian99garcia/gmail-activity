@@ -543,4 +543,5 @@ class Redactor(Gtk.VBox):
                 mail["threadId"] = info["threadid"]
 
         mail["raw"] = base64.urlsafe_b64encode(message.as_string())
+        mail["raw"] = mail["raw"].decode()
         self.emit("send", mail)
