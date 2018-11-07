@@ -20,11 +20,11 @@
 
 import gi
 gi.require_version("Gtk", "3.0")
-gi.require_version("WebKit2", "4.0")
+gi.require_version("WebKit", "3.0")
 
 from gi.repository import Gtk
 from gi.repository import GLib
-from gi.repository import WebKit2
+from gi.repository import WebKit
 from gi.repository import GObject
 
 
@@ -45,11 +45,11 @@ class Browser(Gtk.ScrolledWindow):
 
         self.show_all()
 
-    def __web_process_terminated_cb(self, view, frame):
+    def __load_finished(self, view, frame):
         source = frame.get_data_source()
         data = source.get_data()
         if data is not None:
             self.emit("load-finished", data.str)
 
     def open(self, url):
-        GLib.idle_add(self.browser.load_uri, url)
+        GLib.idle_add(self.browser.open, url)
