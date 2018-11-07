@@ -40,7 +40,7 @@ class Browser(Gtk.ScrolledWindow):
         Gtk.ScrolledWindow.__init__(self)
 
         self.browser = WebKit2.WebView()
-        self.browser.connect("web_process_terminated", self.__web_process_terminated_cb)
+        self.browser.connect("web-process-terminated", self.__web_process_terminated_cb)
         self.add(self.browser)
 
         self.show_all()
